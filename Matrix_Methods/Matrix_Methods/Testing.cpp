@@ -102,3 +102,27 @@ void test::layer_test()
 
 	l1.set_params(thickness, wavelength, index); 
 }
+
+void test::reflectance_test()
+{
+	// example calculation for computing reflectance of simple structure
+
+	int n_pts, n_layers;
+	double start, stop, W;
+
+	sweep WL;
+	
+	Air ri_air;
+	SiN ri_si;
+	SiO2 ri_sio2;
+
+	n_pts = 10; start = 1.52; stop = 1.59;
+	WL.set_vals(n_pts, start, stop);
+
+	multilayer calc; 
+
+	calc.set_params(WL, &ri_si, &ri_air, &ri_sio2); 
+
+	n_layers = 15; W = 1.55 / 1.0; 
+	calc.build_transfer_matrix(n_layers, W, true); 
+}

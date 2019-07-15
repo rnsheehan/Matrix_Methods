@@ -7,7 +7,9 @@ namespace test {
 	void matrix_test_1(); 
 	void matrix_test_2(); 
 
-	void layer_test(); 
+	void layer_test();
+
+	void reflectance_test(); 
 }
 
 #endif

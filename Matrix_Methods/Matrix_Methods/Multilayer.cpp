@@ -94,14 +94,12 @@ std::vector<std::vector<std::complex<double>>> layer::transfer_matrix()
 
 multilayer::multilayer()
 {
-	N = 0; 
-	layer_thickness = 0.0; 
 	layer_mat = nullptr; substrate = nullptr; cladding = nullptr;
 }
 
-multilayer::multilayer(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+multilayer::multilayer(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
 {
-	set_params(n_layers, swp_obj, the_layer, the_cladding, the_substrate);
+	set_params(swp_obj, the_layer, the_cladding, the_substrate);
 }
 
 multilayer::~multilayer()
@@ -109,21 +107,19 @@ multilayer::~multilayer()
 	M.clear();
 }
 
-void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
 {
 	// assign the parameters that make up the layer structure
 
 	try {
-		bool c2 = n_layers > 0 ? true : false; 
+		
 		bool c1 = swp_obj.defined();
 		bool c4 = the_layer != nullptr ? true : false;
 		bool c5 = the_cladding != nullptr ? true : false;
 		bool c6 = the_substrate != nullptr ? true : false;
-		bool c10 = c2 && c1 && c4 && c5 && c6;
+		bool c10 = c1 && c4 && c5 && c6;
 
 		if (c10) {
-			N = n_layers; 
-
 			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
 
 			// assign the material objects
@@ -136,8 +132,7 @@ void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, m
 		}
 		else {
 			std::string reason;
-			reason = "Error: void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)\n";
-			if (!c2) reason += "n_layers: " + template_funcs::toString(n_layers) + " is not valid\n"; 
+			reason = "Error: void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)\n";
 			if (!c1) reason += "swp_obj is not correct\n";
 			if (!c4) reason += "the_layer has not been correctly assigned";
 			if (!c5) reason += "the_cladding has not been correctly assigned";
@@ -151,3 +146,71 @@ void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, m
 	}
 }
 
+void multilayer::build_transfer_matrix(int n_layers, double layer_thickness, bool loud)
+{
+	// Compute the transfer matrix for a system with n_layers each having the same thickness
+	// R. Sheehan 15 - 7 - 2019
+
+	try {
+		bool c1 = n_layers > 0 ? true : false; 
+		bool c2 = layer_thickness > 0 ? true : false; 
+		bool c10 = c1 && c2 && wavelength.defined(); 
+
+		if (c10) {
+			// sweep over all wavelengths
+			double lambda, RI_layer, RI_clad, RI_sub; 
+			std::complex<double> r_numer, t_numer, denom, z1, z2, reflectance, transmittance; 
+			if(loud) std::cout << "Results " + template_funcs::toString(n_layers) + " layers, thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n"; 
+			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+				
+				lambda = wavelength.get_val(i); // assign wavelength value
+				
+				layer_mat->set_wavelength(lambda); // assign wavelength to layer material object
+				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+				
+				RI_layer = layer_mat->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+
+				// get transfer matrix for all layers
+				for (int j = 0; j < n_layers; j++) {
+					layer this_layer(layer_thickness, lambda, RI_layer); // compute transfer matrix for the layer at this wavelength
+
+					if (j == 0) {
+						M = this_layer.transfer_matrix();
+					}
+					else {
+						std::vector<std::vector<std::complex<double>>> Mnow = this_layer.transfer_matrix();
+						M = vecut::cmat_cmat_product(M, Mnow); 
+					}					
+				}
+				
+				// compute reflectance and transmittance of the structure at this wavelength
+				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
+				z1 = (M[0][0] + M[0][1] * RI_sub)*RI_clad; 
+				z2 = (M[1][0] + M[1][1] * RI_sub); 
+				denom = z1 + z2; // common denominator
+				r_numer = z1 - z2; // reflectance numerator
+				t_numer = 2.0*RI_clad; // transmittance numerator
+				reflectance = r_numer / denom; // reflectance
+				transmittance = t_numer / denom; // transmittance
+				r.push_back(reflectance); // store reflectance
+				t.push_back(transmittance); // store transmittance
+
+				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+			}
+		}
+		else {
+			std::string reason;
+			reason = "Error: void multilayer::build_transfer_matrix(int n_layers, double layer_thickness)\n";
+			if (!c1) reason += "n_layers: " + template_funcs::toString(n_layers) + " is not valid\n";
+			if (!c2) reason += "layer_thickness: " + template_funcs::toString(layer_thickness,2) + " is not valid\n";			
+			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n"; 
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
