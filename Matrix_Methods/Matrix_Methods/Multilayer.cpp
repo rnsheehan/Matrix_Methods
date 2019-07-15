@@ -91,8 +91,63 @@ std::vector<std::vector<std::complex<double>>> layer::transfer_matrix()
 }
 
 // definitions for the multilayer class
+
 multilayer::multilayer()
 {
 	N = 0; 
+	layer_thickness = 0.0; 
 	layer_mat = nullptr; substrate = nullptr; cladding = nullptr;
 }
+
+multilayer::multilayer(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+{
+	set_params(n_layers, swp_obj, the_layer, the_cladding, the_substrate);
+}
+
+multilayer::~multilayer()
+{
+	M.clear();
+}
+
+void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+{
+	// assign the parameters that make up the layer structure
+
+	try {
+		bool c2 = n_layers > 0 ? true : false; 
+		bool c1 = swp_obj.defined();
+		bool c4 = the_layer != nullptr ? true : false;
+		bool c5 = the_cladding != nullptr ? true : false;
+		bool c6 = the_substrate != nullptr ? true : false;
+		bool c10 = c2 && c1 && c4 && c5 && c6;
+
+		if (c10) {
+			N = n_layers; 
+
+			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
+
+			// assign the material objects
+			layer_mat = the_layer;
+			substrate = the_substrate;
+			cladding = the_cladding;
+
+			int size = 2;
+			M = vecut::zero_cmat(size, size);
+		}
+		else {
+			std::string reason;
+			reason = "Error: void multilayer::set_params(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)\n";
+			if (!c2) reason += "n_layers: " + template_funcs::toString(n_layers) + " is not valid\n"; 
+			if (!c1) reason += "swp_obj is not correct\n";
+			if (!c4) reason += "the_layer has not been correctly assigned";
+			if (!c5) reason += "the_cladding has not been correctly assigned";
+			if (!c6) reason += "the_substrate has not been correctly assigned";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+

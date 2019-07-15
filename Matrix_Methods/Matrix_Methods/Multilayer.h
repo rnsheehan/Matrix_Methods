@@ -23,12 +23,22 @@ private:
 	std::vector<std::vector<std::complex<double>>> M; // transfer matrix
 };
 
+
+
 class multilayer {
 public:
 	multilayer(); 
+	multilayer(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
+	~multilayer(); 
+
+	void set_params(int n_layers, sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
+
+	void build_transfer_matrix(); // make N and thickness an input parameter here. 
 
 private:
 	int N; // number of layers in the structure
+
+	double layer_thickness; // assume all layers have the same thickness for now
 	
 	// the sweep object defines the wavelength sweep space, all wavelength values are in units of um
 	sweep wavelength;
@@ -37,7 +47,7 @@ private:
 	material *substrate; // object for the substrate material
 	material *cladding; // object for the cladding material
 
-	std::vector<layer> layers; 
+	//std::vector<layer> layers; // do you actually need this?
 	std::vector<std::vector<std::complex<double>>> M; // transfer matrix
 };
 
