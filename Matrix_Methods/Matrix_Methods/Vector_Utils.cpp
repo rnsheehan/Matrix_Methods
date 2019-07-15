@@ -248,3 +248,136 @@ void vecut::write_into_file(std::string &filename, std::vector<double> &data, bo
 		std::cerr << e.what(); 
 	}
 }
+
+std::vector<std::vector<double>> vecut::mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2)
+{
+	// Compute the product of two matrices of arbitrary size
+	
+	try {
+		if (!mat1.empty() && !mat2.empty()) {
+			int rows1, cols1, rows2, cols2;
+
+			rows1 = static_cast<int>(mat1.size()); cols1 = static_cast<int>(mat1[0].size());
+			rows2 = static_cast<int>(mat2.size()); cols2 = static_cast<int>(mat2[0].size());
+
+			if (cols1 == rows2) {
+				// matrix product can be computed
+				// assign memory space to store result
+				std::vector<std::vector<double>> res; 
+
+				for (int i = 0; i < rows1; i++) res.push_back(std::vector<double>(cols2, 0.0)); 
+
+				// compute the matrix product
+				for (int i = 0; i < rows1; i++) {
+					for (int j = 0; j < cols2; j++) {
+						for (int k = 0; k < cols1; k++) {
+							res[i][j] += mat1[i][k] * mat2[k][j]; 
+						}
+					}
+				}
+
+				return res; 
+			}
+			else {
+				// matrix product cannot be computed			 
+				/*std::vector<std::vector<double>> res;
+				for (int i = 0; i < 2; i++) res.push_back(std::vector<double>(2, 0.0));
+				return res;*/
+				std::string reason = "Error: std::vector<std::vector<double>> vecut::mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2)\n";
+				reason += "Matrix product cannot be computed\nMatrix sizes are not compatible\n";
+				throw std::invalid_argument(reason);
+			}
+		}
+		else {
+			std::string reason = "Error: std::vector<std::vector<double>> vecut::mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2)\n"; 
+			reason += "Matrices have not been assigned values\n"; 
+			throw std::invalid_argument(reason);
+		}		
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+std::vector<std::vector<std::complex<double>>> vecut::cmat_cmat_product(std::vector<std::vector<std::complex<double>>> &mat1, std::vector<std::vector<std::complex<double>>> &mat2)
+{
+	// Compute the product of two matrices of arbitrary size
+	// matrix elements are of type std::complex<double>
+
+	try {
+		if (!mat1.empty() && !mat2.empty()) {
+			int rows1, cols1, rows2, cols2;
+
+			rows1 = static_cast<int>(mat1.size()); cols1 = static_cast<int>(mat1[0].size());
+			rows2 = static_cast<int>(mat2.size()); cols2 = static_cast<int>(mat2[0].size());
+
+			if (cols1 == rows2) {
+				// matrix product can be computed
+				// assign memory space to store result
+				std::vector<std::vector<std::complex<double>>> res;
+
+				for (int i = 0; i < rows1; i++) res.push_back(std::vector<std::complex<double>>(cols2, 0.0));
+
+				// compute the matrix product
+				for (int i = 0; i < rows1; i++) {
+					for (int j = 0; j < cols2; j++) {
+						for (int k = 0; k < cols1; k++) {
+							res[i][j] += mat1[i][k] * mat2[k][j];
+						}
+					}
+				}
+
+				return res;
+			}
+			else {
+				// matrix product cannot be computed			 
+				/*std::vector<std::vector<double>> res;
+				for (int i = 0; i < 2; i++) res.push_back(std::vector<double>(2, 0.0));
+				return res;*/
+				std::string reason = "Error: std::vector<std::vector<std::complex<double>>> vecut::cmat_cmat_product(std::vector<std::vector<std::complex<double>>> &mat1, std::vector<std::vector<std::complex<double>>> &mat2)\n";
+				reason += "Matrix product cannot be computed\nMatrix sizes are not compatible\n";
+				throw std::invalid_argument(reason);
+			}
+		}
+		else {
+			std::string reason = "Error: std::vector<std::vector<std::complex<double>>> vecut::cmat_cmat_product(std::vector<std::vector<std::complex<double>>> &mat1, std::vector<std::vector<std::complex<double>>> &mat2)\n";
+			reason += "Matrices have not been assigned values\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+std::vector<std::vector<std::complex<double>>> vecut::zero_cmat(int &rows, int &cols)
+{
+	// return a complex valued zero matrix of given size
+	// R. Sheehan 15 - 7 - 2019
+
+	try {
+		bool c1 = rows > 0 ? true : false; 
+		bool c2 = cols > 0 ? true : false; 
+		bool c10 = c1 && c2; 
+
+		if (c10) {
+			std::vector<std::vector<std::complex<double>>> res; 
+
+			for (int i = 0; i < rows; i++) res.push_back( std::vector< std::complex< double > >(cols, zero) ); 
+
+			return res; 
+		}
+		else {
+			std::string reason = "Error: std::vector<std::vector<std::complex<double>>> vecut::zero_cmat(int &rows, int &cols)\n";
+			if (!c1) reason += "rows: " + template_funcs::toString(rows, 2) + " is not valid\n";
+			if (!c2) reason += "cols: " + template_funcs::toString(cols, 2) + " is not valid\n";
+			throw std::invalid_argument(reason);
+		}			
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}

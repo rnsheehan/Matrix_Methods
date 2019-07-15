@@ -1,0 +1,8 @@
+Program Exit Explanation
+
+Error occurred: Mon Jul 15 14:50:02 2019
+
+Error: std::vector<std::vector<double>> vecut::mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2)
+Matrix product cannot be computed
+Matrix sizes are not compatible
+

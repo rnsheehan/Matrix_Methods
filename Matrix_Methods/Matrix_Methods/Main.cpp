@@ -4,6 +4,9 @@
 
 int main() 
 {
+	//test::matrix_test_2();
+
+	test::layer_test(); 
 	
 	std::cout << "Press enter to close\n";
 	std::cin.get();

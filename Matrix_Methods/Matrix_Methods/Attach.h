@@ -22,7 +22,7 @@
 #include <cmath>
 #include <vector>
 #include <iterator>
-
+#include <complex>
 #include <algorithm>
 
 // Constants
@@ -56,8 +56,16 @@ static const int MAX_PATH_LENGTH = 250; // max. length for a directory in Window
 static const std::string empty_str = "";
 static const std::string dottxt = ".txt";
 
+static const std::complex<double> zero(0.0, 0.0); 
+static const std::complex<double> eye(0.0, 1.0);
+
 #include "Templates.h"
 #include "Useful.h"
 #include "Vector_Utils.h"
+#include "Neville.h"
+#include "Material_Models.h"
+#include "Multilayer.h"
+
+#include "Testing.h"
 
 #endif
