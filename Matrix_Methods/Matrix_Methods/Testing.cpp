@@ -116,13 +116,13 @@ void test::reflectance_test()
 	SiN ri_si;
 	SiO2 ri_sio2;
 
-	n_pts = 10; start = 1.52; stop = 1.59;
+	n_pts = 21; start = 1.52; stop = 1.59;
 	WL.set_vals(n_pts, start, stop);
 
-	multilayer calc; 
+	AR_filter calc;
 
 	calc.set_params(WL, &ri_si, &ri_air, &ri_sio2); 
 
-	n_layers = 15; W = 1.55 / 1.0; 
-	calc.build_transfer_matrix(n_layers, W, true); 
+	n_layers = 4; W = 1.55 / 4.0; 
+	calc.compute_r_t(n_layers, W, true);
 }

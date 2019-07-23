@@ -2,7 +2,60 @@
 #include "Attach.h"
 #endif
 
-// Definition of the classes in Multilayer.h
+// Definition of the classes in AR_filter.h
+
+// Definition of the compute function in the spectrum namespace
+// R. Sheehan 23 - 7 - 2019
+
+void spectrum::compute(double &n_clad, double &n_sub, std::vector<std::vector<std::complex<double>>> &M, std::complex<double> &r, std::complex<double> &t)
+{
+	// Given a transfer matrix M(\lambda) computed for some structure at some specific wavelength
+	// Compute the reflectance and transmittance coefficients when the structure described by M is placed on substrate of
+	// RI n_sub and covered by material of RI n_clad
+	// Computed reflectance and transmittance values will be returned through pass by reference to r and t
+	// R. Sheehan 23 - 7 - 2019
+
+	try {
+		bool c1 = n_clad > 0 ? true : false; // equivalent to n_{0} in formulae
+		bool c2 = n_sub > 0 ? true : false; // equivalent to n_{t} in formulae
+		bool c3 = ( !M.empty() ) ? true : false;
+		bool c10 = c1 && c2 && c3; 
+
+		if (c10) {
+			std::complex<double> r_numer, t_numer, denom, z1, z2;
+
+			z1 = (M[0][0] + M[0][1] * n_sub)*n_clad;
+			
+			z2 = (M[1][0] + M[1][1] * n_sub);
+			
+			denom = z1 + z2; // common denominator
+			
+			if (abs(denom) > 0.0) { // avoid division by zero
+				r_numer = z1 - z2; // reflectance numerator
+
+				t_numer = 2.0*n_clad; // transmittance numerator
+
+				r = r_numer / denom; // reflectance
+
+				t = t_numer / denom; // transmittance
+			}
+			else {
+				r = t = zero; 
+			}
+		}
+		else {
+			std::string reason = "Error: void spectrum::compute(double &n_clad, double &n_sub, std::vector<std::vector<std::complex<double>>> &M, std::complex<double> &r, std::complex<double> &t)\n";
+			if (!c1) reason += "n_clad: " + template_funcs::toString(n_clad, 2) + " is not valid\n"; 
+			if (!c1) reason += "n_sub: " + template_funcs::toString(n_sub, 2) + " is not valid\n";
+			if (!c3) reason += "Transfer Matrix M has not been computed\n";
+			throw std::invalid_argument(reason); 
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
 
 // Definitions of the layer class
 layer::layer()
@@ -90,24 +143,24 @@ std::vector<std::vector<std::complex<double>>> layer::transfer_matrix()
 	}
 }
 
-// definitions for the multilayer class
+// definitions for the AR_filter class
 
-multilayer::multilayer()
+AR_filter::AR_filter()
 {
 	layer_mat = nullptr; substrate = nullptr; cladding = nullptr;
 }
 
-multilayer::multilayer(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+AR_filter::AR_filter(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
 {
 	set_params(swp_obj, the_layer, the_cladding, the_substrate);
 }
 
-multilayer::~multilayer()
+AR_filter::~AR_filter()
 {
 	M.clear();
 }
 
-void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+void AR_filter::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
 {
 	// assign the parameters that make up the layer structure
 
@@ -132,7 +185,7 @@ void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_c
 		}
 		else {
 			std::string reason;
-			reason = "Error: void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)\n";
+			reason = "Error: void AR_filter::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)\n";
 			if (!c1) reason += "swp_obj is not correct\n";
 			if (!c4) reason += "the_layer has not been correctly assigned";
 			if (!c5) reason += "the_cladding has not been correctly assigned";
@@ -146,7 +199,7 @@ void multilayer::set_params(sweep &swp_obj, material *the_layer, material *the_c
 	}
 }
 
-void multilayer::build_transfer_matrix(int n_layers, double layer_thickness, bool loud)
+void AR_filter::compute_r_t(int n_layers, double layer_thickness, bool loud)
 {
 	// Compute the transfer matrix for a system with n_layers each having the same thickness
 	// R. Sheehan 15 - 7 - 2019
@@ -159,21 +212,29 @@ void multilayer::build_transfer_matrix(int n_layers, double layer_thickness, boo
 		if (c10) {
 			// sweep over all wavelengths
 			double lambda, RI_layer, RI_clad, RI_sub; 
-			std::complex<double> r_numer, t_numer, denom, z1, z2, reflectance, transmittance; 
-			if(loud) std::cout << "Results " + template_funcs::toString(n_layers) + " layers, thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n"; 
+			std::complex<double> reflectance, transmittance; 
+			std::string filename; 
+			filename = "AR_filter_Data_" + template_funcs::toString(n_layers) + "_Layers_" + template_funcs::toString(layer_thickness, 2) +  "_Layer_Thickness.txt"; 
+			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+			if(loud) std::cout << "Results " + template_funcs::toString(n_layers) + " layers,  layer thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n"; 
 			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
 				
 				lambda = wavelength.get_val(i); // assign wavelength value
 				
 				layer_mat->set_wavelength(lambda); // assign wavelength to layer material object
+
 				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+				
 				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
 				
 				RI_layer = layer_mat->refractive_index(); // compute wavelength dependent refractive index at this wavelength
 
+				// since this is an anti-reflection film the same matrix is used for all layers for fixed wavelength
+				layer this_layer(layer_thickness, lambda, RI_layer); // compute transfer matrix for the layer at this wavelength
+
 				// get transfer matrix for all layers
+				// for the anti-reflection filter multiply the single layer TM by itself n_layers times
 				for (int j = 0; j < n_layers; j++) {
-					layer this_layer(layer_thickness, lambda, RI_layer); // compute transfer matrix for the layer at this wavelength
 
 					if (j == 0) {
 						M = this_layer.transfer_matrix();
@@ -185,24 +246,27 @@ void multilayer::build_transfer_matrix(int n_layers, double layer_thickness, boo
 				}
 				
 				// compute reflectance and transmittance of the structure at this wavelength
+
 				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+
 				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
-				z1 = (M[0][0] + M[0][1] * RI_sub)*RI_clad; 
-				z2 = (M[1][0] + M[1][1] * RI_sub); 
-				denom = z1 + z2; // common denominator
-				r_numer = z1 - z2; // reflectance numerator
-				t_numer = 2.0*RI_clad; // transmittance numerator
-				reflectance = r_numer / denom; // reflectance
-				transmittance = t_numer / denom; // transmittance
+
+				spectrum::compute(RI_clad, RI_sub, M, reflectance, transmittance); // compute the wavelength dependent r, t values from the wavelength dependent M(\lambda)
+
 				r.push_back(reflectance); // store reflectance
+				
 				t.push_back(transmittance); // store transmittance
 
 				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+
+				write << lambda << " , " << RI_clad << " , " << RI_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
 			}
+
+			write.close(); 
 		}
 		else {
 			std::string reason;
-			reason = "Error: void multilayer::build_transfer_matrix(int n_layers, double layer_thickness)\n";
+			reason = "Error: void AR_filter::build_transfer_matrix(int n_layers, double layer_thickness)\n";
 			if (!c1) reason += "n_layers: " + template_funcs::toString(n_layers) + " is not valid\n";
 			if (!c2) reason += "layer_thickness: " + template_funcs::toString(layer_thickness,2) + " is not valid\n";			
 			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n"; 

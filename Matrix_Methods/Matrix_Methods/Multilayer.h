@@ -1,9 +1,13 @@
 #ifndef MULTILAYER_H
 #define MULTILAYER_H
 
-// class for implementing the matrix method for computing the reflectance / transmittance spectra of multilayer thin films
+// classes for implementing the matrix method for computing the reflectance / transmittance spectra of multilayer thin films
 // method is described in Fowles, section 4.4
 // R. Sheehan 15 - 7 - 2019
+
+namespace spectrum {
+	void compute(double &n_clad, double &n_sub, std::vector<std::vector<std::complex<double>>> &M, std::complex<double> &r, std::complex<double> &t);
+}
 
 class layer {
 public:
@@ -23,17 +27,15 @@ private:
 	std::vector<std::vector<std::complex<double>>> M; // array to store transfer matrix of this layer
 };
 
-
-
-class multilayer {
+class AR_filter {
 public:
-	multilayer(); 
-	multilayer(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
-	~multilayer(); 
+	AR_filter();
+	AR_filter(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
+	~AR_filter();
 
 	void set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
 
-	void build_transfer_matrix(int n_layers, double layer_thickness, bool loud); // make N and thickness an input parameter here. 
+	void compute_r_t(int n_layers, double layer_thickness, bool loud); // make N and thickness an input parameter here. 
 
 private:
 	// the sweep object defines the wavelength sweep space, all wavelength values are in units of um
