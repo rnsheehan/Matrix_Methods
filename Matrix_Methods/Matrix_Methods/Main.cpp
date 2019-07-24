@@ -8,7 +8,9 @@ int main()
 
 	//test::layer_test(); 
 
-	test::reflectance_test(); 
+	//test::AR_filter_test();
+
+	test::high_low_test(); 
 	
 	std::cout << "Press enter to close\n";
 	std::cin.get();

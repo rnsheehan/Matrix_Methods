@@ -1,8 +1,8 @@
 Program Exit Explanation
 
-Error occurred: Mon Jul 15 14:50:02 2019
+Error occurred: Wed Jul 24 07:04:52 2019
 
-Error: std::vector<std::vector<double>> vecut::mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2)
-Matrix product cannot be computed
-Matrix sizes are not compatible
+Attempting to compute RI outside of allowed range in Si::refractive_index()
+wavelength = 1520.000 (um)
+Allowed range for Si model is [ 0.197, 2.5 ]
 

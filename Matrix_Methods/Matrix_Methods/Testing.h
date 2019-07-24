@@ -9,7 +9,9 @@ namespace test {
 
 	void layer_test();
 
-	void reflectance_test(); 
+	void AR_filter_test(); 
+
+	void high_low_test(); 
 }
 
 #endif

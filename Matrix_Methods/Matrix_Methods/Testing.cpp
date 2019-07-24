@@ -103,9 +103,11 @@ void test::layer_test()
 	l1.set_params(thickness, wavelength, index); 
 }
 
-void test::reflectance_test()
+void test::AR_filter_test()
 {
 	// example calculation for computing reflectance of simple structure
+	// for this choice of materials and layer thicknesses you are designing an anti-reflection filter
+	// RI_{SiN} ~ 2, RI_{Si02} ~ 1.4 ~ \sqrt{2} for \lambda = 1.55 um
 
 	int n_pts, n_layers;
 	double start, stop, W;
@@ -113,16 +115,42 @@ void test::reflectance_test()
 	sweep WL;
 	
 	Air ri_air;
-	SiN ri_si;
+	SiN ri_sin;
 	SiO2 ri_sio2;
 
 	n_pts = 21; start = 1.52; stop = 1.59;
 	WL.set_vals(n_pts, start, stop);
 
-	AR_filter calc;
+	multilayer calc;
 
-	calc.set_params(WL, &ri_si, &ri_air, &ri_sio2); 
+	calc.set_params(WL, &ri_sin, &ri_air, &ri_sio2); 
 
 	n_layers = 4; W = 1.55 / 4.0; 
 	calc.compute_r_t(n_layers, W, true);
+}
+
+void test::high_low_test()
+{
+	// example calculation for computing reflectance of an alternating structure
+	// R. Sheehan 23 - 7 - 2019
+
+	int n_pts, n_layers;
+	double start, stop, W;
+
+	sweep WL;
+
+	Air ri_air;
+	SiN ri_sin;
+	SiO2 ri_sio2;
+	Si ri_si; 
+
+	n_pts = 201; start = 1.52; stop = 1.59;
+	WL.set_vals(n_pts, start, stop);
+
+	HL_stack calc;
+
+	calc.set_params(WL, &ri_si, &ri_si, &ri_air, &ri_sin);
+
+	n_layers = 5; W = 1.55 / 4.0;
+	calc.compute_r_t(n_layers, W);
 }
