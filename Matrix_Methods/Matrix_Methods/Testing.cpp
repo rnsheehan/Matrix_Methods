@@ -125,7 +125,7 @@ void test::AR_filter_test()
 
 	calc.set_params(WL, &ri_sin, &ri_air, &ri_sio2); 
 
-	n_layers = 4; W = 1.55 / 4.0; 
+	n_layers = 1; W = 1.55 / 4.0; 
 	calc.compute_r_t(n_layers, W, true);
 }
 
@@ -152,7 +152,7 @@ void test::high_low_test()
 	calc.set_params(WL, &ri_si, &ri_si, &ri_air, &ri_sin);
 
 	n_layers = 5; W = 1.55 / 4.0;
-	calc.compute_r_t(n_layers, W);
+	calc.compute_r_t_Fowles(n_layers, W);
 }
 
 void test::r_t_test()
