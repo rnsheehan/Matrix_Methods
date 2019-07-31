@@ -141,6 +141,8 @@ public:
 
 	void compute_r_t_Fowles(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
 
+	void compute_r_t(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
+
 private:
 	// the sweep object defines the wavelength sweep space, all wavelength values are in units of um
 	sweep wavelength;

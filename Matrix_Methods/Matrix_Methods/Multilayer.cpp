@@ -505,7 +505,7 @@ void multilayer::compute_r_t(int n_layers, double layer_thickness, bool loud)
 				// compute the transition matrix at the layer-substrate interface
 				fresnel T23;
 
-				T23.compute_T(TE, RI_layer, RI_sub, zero);
+				T23.compute_T(TE, RI_layer, RI_sub, T12.get_theta_t());
 
 				Mnow = T23.transition_matrix(); 
 
@@ -671,6 +671,110 @@ void HL_stack::compute_r_t_Fowles(int n_layers, double layer_thickness, bool lou
 				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
 
 				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+			}
+
+			write.close();
+		}
+		else {
+			std::string reason;
+			reason = "Error: void HL_stack::compute_r_t_Fowles(int n_layers, double layer_thickness)\n";
+			if (!c1) reason += "n_layers: " + template_funcs::toString(n_layers) + " is not valid\n";
+			if (!c2) reason += "layer_thickness: " + template_funcs::toString(layer_thickness, 2) + " is not valid\n";
+			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}
+
+void HL_stack::compute_r_t(int n_layers, double layer_thickness, bool loud)
+{
+	// Compute the transfer matrix for a system with n_layers each having the same thickness
+	// R. Sheehan 15 - 7 - 2019
+
+	try {
+		bool c1 = n_layers > 0 ? true : false;
+		bool c2 = layer_thickness > 0 ? true : false;
+		bool c10 = c1 && c2 && wavelength.defined();
+
+		if (c10) {
+			// sweep over all wavelengths
+			int total_layers = 2 * n_layers;
+			double lambda, RI_h, RI_l, RI_clad, RI_sub;
+			std::complex<double> r_coeff, t_coeff;
+			std::string filename;
+			filename = "HL_stack_Data_" + template_funcs::toString(n_layers) + "_Layers_" + template_funcs::toString(layer_thickness, 2) + "_Layer_Thickness.txt";
+			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+			if (loud) std::cout << "Results " + template_funcs::toString(n_layers) + " layers,  layer thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n";
+			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+
+				lambda = wavelength.get_val(i); // assign wavelength value
+
+				layer_high->set_wavelength(lambda); // assign wavelength to layer material object
+
+				layer_low->set_wavelength(lambda); // assign wavelength to layer material object
+
+				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+
+				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+
+				RI_h = layer_high->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+
+				RI_l = layer_low->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+
+				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+
+				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
+
+				// since this is an anti-reflection film the same matrix is used for all layers for fixed wavelength
+				fresnel T12, T_hl, T_lh; 
+
+				T12.compute_T(TE, RI_clad, RI_h, zero); 
+
+				T_hl.compute_T(TE, RI_h, RI_l, T12.get_theta_t()); 
+
+				T_lh.compute_T(TE, RI_l, RI_h, T_hl.get_theta_t()); 
+
+				propagation P_h, P_l; 
+
+				P_h.compute_P(lambda, RI_h, layer_thickness, T12.get_theta_t()); 
+
+				P_l.compute_P(lambda, RI_l, layer_thickness, T12.get_theta_t()); 
+
+				std::vector<std::vector<std::complex<double>>> Mnow;
+
+				// get transfer matrix for all layers
+				// for the anti-reflection filter multiply the single layer TM by itself n_layers times
+
+				M = T12.transition_matrix(); 
+
+				for (int j = 0; j < total_layers; j++) {
+					if (j % 2 == 0) {
+						Mnow = P_h.propagation_matrix(); 
+						M = vecut::cmat_cmat_product(M, Mnow); 
+						Mnow = T_hl.transition_matrix(); 
+						M = vecut::cmat_cmat_product(M, Mnow);
+					}
+					else {
+						Mnow = P_l.propagation_matrix(); 
+						M = vecut::cmat_cmat_product(M, Mnow);
+						Mnow = T_lh.transition_matrix();
+						M = vecut::cmat_cmat_product(M, Mnow);
+					}					
+				}
+
+				// compute reflectance and transmittance of the structure at this wavelength
+				
+				r_coeff = M[0][1] / M[0][0];
+
+				t_coeff = 1.0 / M[0][0];
+
+				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+
+				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
 			}
 
 			write.close();
