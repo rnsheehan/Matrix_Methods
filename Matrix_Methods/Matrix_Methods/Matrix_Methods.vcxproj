@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Attach.h" />
+    <ClInclude Include="Fowles_Multilayer.h" />
     <ClInclude Include="Material_Models.h" />
     <ClInclude Include="Multilayer.h" />
     <ClInclude Include="Neville.h" />
@@ -125,6 +126,7 @@
     <ClInclude Include="Vector_Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Fowles_Multilayer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Material_Models.cpp" />
     <ClCompile Include="Multilayer.cpp" />

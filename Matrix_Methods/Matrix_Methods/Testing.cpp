@@ -154,3 +154,58 @@ void test::high_low_test()
 	n_layers = 5; W = 1.55 / 4.0;
 	calc.compute_r_t(n_layers, W);
 }
+
+void test::r_t_test()
+{
+	// compute the transmisson and reflection coefficients for a dielectric interface
+	// R. Sheehan 31 - 7 - 2019
+
+	double n_in, n_out, angle; 
+
+	n_out = 1.0; n_in = 1.5; angle = PI_6; 
+
+	fresnel iface; 
+
+	iface.set_params(n_in, n_out); 
+
+	std::complex<double> r = iface.reflection(TE, angle); 
+	std::complex<double> t = iface.transmission(TE, angle); 
+
+	std::cout << "|r|: " << abs(r) << "\n";
+	std::cout << "|r|^{2}: " << template_funcs::DSQR(abs(r)) << "\n"; 
+	std::cout << "|t|^{2}: " << template_funcs::DSQR(abs(t)) << "\n";
+	std::cout << "|t|: " << abs(t) << "\n";
+
+	// output the air-glass coefficients
+	//std::string filename = "Air_to_Glass.txt"; 
+
+	std::string filename = "Glass_to_Air.txt";
+	
+	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+
+	if (write.is_open()) {
+		
+		write << "n1, " << n_in << ", n2, " << n_out << ", n1 / n2, " << n_in / n_out << "\n"; 
+		write << "Critical Angle (rad), " << iface.get_theta_critical().real() << " , " << iface.get_theta_critical().imag() << "\n"; 
+		write << "Brewster Angle (rad), " << iface.get_theta_brewster().real() << " , " << iface.get_theta_brewster().imag() << "\n";
+		write << "angle (rad), r_{TE}, t_{TE}, r_{TM}, t_{TM}\n"; 
+
+		int n_angle; 
+		double d_angle, angle_min, angle_max; 
+
+		n_angle = 201; 
+		angle_min = 0.0; angle_max = PI_2; 
+		d_angle = (angle_max - angle_min) / (n_angle - 1); 
+
+		angle = angle_min; 
+		while (angle < angle_max + d_angle) {
+			
+			write << angle << " , " << abs(iface.reflection(TE, angle)) << " , " << abs(iface.transmission(TE, angle)) << " , " << abs(iface.reflection(TM, angle)) << " , " << abs(iface.transmission(TM, angle)) << "\n"; 
+
+			angle += d_angle; 
+		}
+
+
+		write.close(); 
+	}
+}

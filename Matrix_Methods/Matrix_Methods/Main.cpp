@@ -10,7 +10,9 @@ int main()
 
 	//test::AR_filter_test();
 
-	test::high_low_test(); 
+	//test::high_low_test(); 
+
+	test::r_t_test(); 
 	
 	std::cout << "Press enter to close\n";
 	std::cin.get();

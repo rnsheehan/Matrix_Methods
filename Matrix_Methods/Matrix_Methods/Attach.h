@@ -64,6 +64,7 @@ static const std::complex<double> eye(0.0, 1.0);
 #include "Vector_Utils.h"
 #include "Neville.h"
 #include "Material_Models.h"
+#include "Fowles_Multilayer.h"
 #include "Multilayer.h"
 
 #include "Testing.h"

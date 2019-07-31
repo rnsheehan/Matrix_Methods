@@ -12,6 +12,8 @@ namespace test {
 	void AR_filter_test(); 
 
 	void high_low_test(); 
+
+	void r_t_test(); 
 }
 
 #endif
