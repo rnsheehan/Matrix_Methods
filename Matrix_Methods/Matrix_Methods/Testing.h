@@ -5,6 +5,7 @@
 
 namespace test {
 	void matrix_test_1(); 
+
 	void matrix_test_2(); 
 
 	void layer_test();
@@ -14,6 +15,14 @@ namespace test {
 	void high_low_test(); 
 
 	void r_t_test(); 
+
+	void fp_test(); 
+
+	void ar_coating(); 
+
+	void hr_coating(); 
+
+	void fp_filter();
 }
 
 #endif

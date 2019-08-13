@@ -381,3 +381,32 @@ std::vector<std::vector<std::complex<double>>> vecut::zero_cmat(int &rows, int &
 		exit(EXIT_FAILURE);
 	}
 }
+
+std::vector<std::vector<std::complex<double>>> vecut::idn_cmat(int &size)
+{
+	// return a complex valued identity matrix of given size
+	// R. Sheehan 15 - 7 - 2019
+
+	try {
+		bool c1 = size > 0 ? true : false;
+		
+		if (c1) {
+			std::vector<std::vector<std::complex<double>>> res;
+
+			res = zero_cmat(size, size); 
+
+			for (int i = 0; i < size; i++) res[i][i] = one; 
+
+			return res;
+		}
+		else {
+			std::string reason = "Error: std::vector<std::vector<std::complex<double>>> vecut::idn_cmat(int &rows, int &cols)\n";
+			if (!c1) reason += "rows: " + template_funcs::toString(size) + " is not valid\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument &e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+}

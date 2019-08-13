@@ -55,35 +55,35 @@ void spectrum::compute(double &n_clad, double &n_sub, std::vector<std::vector<st
 	}
 }
 
-// Definitions of the layer class
-layer::layer()
+// Definitions of the fowles_layer class
+fowles_layer::fowles_layer()
 {
 	defined = false;
 	size = 0;
 }
 
-layer::layer(double thickness, double wavelength, double ref_index)
+fowles_layer::fowles_layer(double thickness, double wavelength, double ref_index)
 {
 	set_params(thickness, wavelength, ref_index);
 }
 
-layer::layer(layer &lobj)
+fowles_layer::fowles_layer(const fowles_layer &lobj)
 {
 	*this = lobj;
 }
 
-layer::~layer()
+fowles_layer::~fowles_layer()
 {
 	defined = false;
 	M.clear();
 }
 
-void layer::set_params(double thickness, double wavelength, double ref_index)
+void fowles_layer::set_params(double thickness, double wavelength, double ref_index)
 {
-	// assign the layer parameters
-	// thickness of the layer in units of nm
-	// wavelength of light in the layer
-	// wavelength dependent refractive index of the layer
+	// assign the fowles_layer parameters
+	// thickness of the fowles_layer in units of nm
+	// wavelength of light in the fowles_layer
+	// wavelength dependent refractive index of the fowles_layer
 	// R. Sheehan 15 - 7 - 2019
 
 	try {
@@ -115,7 +115,7 @@ void layer::set_params(double thickness, double wavelength, double ref_index)
 			defined = true;
 		}
 		else {
-			std::string reason = "Error: void layer::set_params(double thickness, double wavelength, double ref_index)\n";
+			std::string reason = "Error: void fowles_layer::set_params(double thickness, double wavelength, double ref_index)\n";
 			if (!c1) reason += "thickness: " + template_funcs::toString(thickness, 2) + " is not valid\n";
 			if (!c2) reason += "wavelength: " + template_funcs::toString(wavelength, 2) + " is not valid\n";
 			if (!c3) reason += "ref_index: " + template_funcs::toString(ref_index, 2) + " is not valid\n";
@@ -128,9 +128,9 @@ void layer::set_params(double thickness, double wavelength, double ref_index)
 	}
 }
 
-std::vector<std::vector<std::complex<double>>> layer::transfer_matrix()
+std::vector<std::vector<std::complex<double>>> fowles_layer::transfer_matrix()
 {
-	// return the transfer matrix of a given layer
+	// return the transfer matrix of a given fowles_layer
 
 	if (defined) {
 		return M;

@@ -1,8 +1,7 @@
 Program Exit Explanation
 
-Error occurred: Wed Jul 24 07:04:52 2019
+Error occurred: Tue Aug 13 14:42:46 2019
 
-Attempting to compute RI outside of allowed range in Si::refractive_index()
-wavelength = 1520.000 (um)
-Allowed range for Si model is [ 0.197, 2.5 ]
+Error: void propagation::set_params(double wavelength, double index, double thickness, std::complex<double> angle)
+Input values not correctly defined
 

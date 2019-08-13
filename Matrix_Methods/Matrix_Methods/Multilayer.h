@@ -98,14 +98,62 @@ private:
 	std::vector<std::vector<std::complex<double>>> P;  // array to store dielectric layer propagation matrix
 };
 
-// Implementation of class that is used to compute reflectance and transmittance spectrum of a multilayer stack
-// in which each of the layers is composed of the same material. 
+// implementation of layer class that can be used to compute properties of multilayer stacks
+// R. Sheehan 13 - 8 -2019
+
+class layer {
+public:
+	layer();
+	layer(double &d, material *mat); 
+	layer(const layer &lobj);
+
+	void set_params(double &d, material *mat);
+
+	inline double get_d() { return thickness; }
+
+	double get_RI(double wavelength); 
+private:
+	double thickness; 
+
+	material *the_mat; 
+};
+
+// implementation of a class that can be used to compute the reflection and transmission spectrum of an arbitrary multilayer stack
+// the idea is to input a list of layers and then compute its r and t spectra
+// the user will create the layer list and there will be one method for computing its spectra
+// R. Sheehan 13 - 8 - 2019
 
 class multilayer {
 public:
-	multilayer();
-	multilayer(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
-	~multilayer();
+	multilayer(); 
+	multilayer(sweep &swp_obj, std::vector<layer> &layer_list);
+	~multilayer(); 
+
+	void set_params(sweep &swp_obj, std::vector<layer> &layer_list);
+
+	void compute_spectrum(bool polarisation, bool loud = false);
+
+private:
+	std::vector<std::vector<std::complex<double>>> transmission_matrix(double &lambda, bool polarisation, bool loud = false);
+
+private:
+	sweep wavelength; // the sweep object defines the wavelength sweep space, all wavelength values are in units of um
+
+	std::vector<std::complex<double>> r; // vector to hold computed reflectance values 
+
+	std::vector<std::complex<double>> t; // vector to hold computed transmittance values
+
+	std::vector<layer> the_layers; // list holding all info on the layers in the stack
+};
+
+// Implementation of class that is used to compute reflectance and transmittance spectrum of a multilayer stack
+// in which each of the layers is composed of the same material. 
+
+class multilayer_old {
+public:
+	multilayer_old();
+	multilayer_old(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
+	~multilayer_old();
 
 	void set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
 

@@ -16,6 +16,7 @@ namespace vecut {
 	std::vector<std::vector<std::complex<double>>> cmat_cmat_product(std::vector<std::vector<std::complex<double>>> &mat1, std::vector<std::vector<std::complex<double>>> &mat2);
 
 	std::vector<std::vector<std::complex<double>>> zero_cmat(int &rows, int &cols); 
+	std::vector<std::vector<std::complex<double>>> idn_cmat(int &size);
 }
 
 #endif

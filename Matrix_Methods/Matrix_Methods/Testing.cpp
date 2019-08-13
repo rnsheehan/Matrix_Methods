@@ -98,7 +98,7 @@ void test::layer_test()
 	double wavelength = 1550; // wavelength in nm
 	double index = 3.48; // RI value at some wavelength
 
-	layer l1; 
+	fowles_layer l1; 
 
 	l1.set_params(thickness, wavelength, index); 
 }
@@ -121,7 +121,7 @@ void test::AR_filter_test()
 	n_pts = 21; start = 1.52; stop = 1.59;
 	WL.set_vals(n_pts, start, stop);
 
-	multilayer calc;
+	multilayer_old calc;
 
 	calc.set_params(WL, &ri_sin, &ri_air, &ri_sio2); 
 
@@ -208,4 +208,188 @@ void test::r_t_test()
 
 		write.close(); 
 	}
+}
+
+void test::fp_test()
+{
+	// Use the multilayer structure to compute the R, T spectrum of a FP cavity
+	// R. Sheehan 13 - 8 - 2019
+
+	int n_pts;
+	double start, stop, W = 0.0;
+
+	// Declarate the objects
+	sweep WL;
+
+	Air ri_air;
+	SiN ri_sin;
+	SiO2 ri_sio2;
+	Si ri_si;
+
+	// Fill the parameter space
+	n_pts = 5; start = 1.2; stop = 1.6;
+	WL.set_vals(n_pts, start, stop);
+
+	// Create layer stack
+	std::vector<layer> the_layers; 
+
+	W = 0.0; the_layers.push_back( layer(W, &ri_air) ); 
+	W = 2; the_layers.push_back( layer(W, &ri_si) );
+	W = 0.0; the_layers.push_back( layer(W, &ri_sin) );
+
+	// Compute the r, t spectra
+	multilayer compute; 
+
+	compute.set_params(WL, the_layers); 
+
+	compute.compute_spectrum(TE, true); 
+}
+
+void test::ar_coating()
+{
+	// compute the spectrum of ar stack
+	// SiN layers on SiO2 layers on Si substrate
+
+	int n_pts;
+	double start, stop, W = 0.0, Wt = 0.25*1.55;
+
+	// Declarate the objects
+	sweep WL;
+
+	Air ri_air;
+	SiN ri_sin;
+	SiO2 ri_sio2;
+	Si ri_si;
+
+	// Fill the parameter space
+	n_pts = 51; start = 1.52; stop = 1.59;
+	WL.set_vals(n_pts, start, stop);
+
+	// Create layer stack
+	std::vector<layer> the_layers;
+
+	the_layers.push_back(layer(W, &ri_air));
+	Wt *= 9;  the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(W, &ri_sin));
+
+	// Compute the r, t spectra
+	multilayer compute;
+
+	compute.set_params(WL, the_layers);
+
+	compute.compute_spectrum(TE, true);
+}
+
+void test::hr_coating()
+{
+	// compute the spectrum of hr stack
+	// SiN layers on SiO2 layers on Si substrate
+
+	int n_pts;
+	double start, stop, W = 0.0, Wt = 1.55/4.0;
+
+	// Declarate the objects
+	sweep WL;
+
+	Air ri_air;
+	SiN ri_sin;
+	SiO2 ri_sio2;
+	Si ri_si;
+
+	// Fill the parameter space
+	n_pts = 201; start = 1.0; stop = 1.6;
+	WL.set_vals(n_pts, start, stop);
+
+	// Create layer stack
+	std::vector<layer> the_layers;
+
+	the_layers.push_back(layer(W, &ri_air));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_si));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(W, &ri_air));
+
+	// Compute the r, t spectra
+	multilayer compute;
+
+	compute.set_params(WL, the_layers);
+
+	compute.compute_spectrum(TE, true);
+}
+
+void test::fp_filter()
+{
+	// compute the spectrum of hr stack
+	// SiN layers on SiO2 layers on Si substrate
+
+	int n_pts;
+	double start, stop, W = 0.0, Wt = 0.25*1.55;
+
+	// Declarate the objects
+	sweep WL;
+
+	Air ri_air;
+	SiN ri_sin;
+	SiO2 ri_sio2;
+	Si ri_si;
+
+	// Fill the parameter space
+	n_pts = 101; start = 1.2; stop = 1.6;
+	WL.set_vals(n_pts, start, stop);
+
+	// Create layer stack
+	std::vector<layer> the_layers;
+
+	the_layers.push_back(layer(W, &ri_air));
+
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_sin));
+
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_sin));
+	
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_sin));
+	
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_sin));
+
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+
+	the_layers.push_back(layer(Wt, &ri_sin));
+	the_layers.push_back(layer(Wt, &ri_sio2));
+	
+	the_layers.push_back(layer(W, &ri_si));
+
+	// Compute the r, t spectra
+	multilayer compute;
+
+	compute.set_params(WL, the_layers);
+
+	compute.compute_spectrum(TE, true);
 }

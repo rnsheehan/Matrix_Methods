@@ -10,9 +10,17 @@ int main()
 
 	//test::AR_filter_test();
 
-	test::high_low_test(); 
+	//test::high_low_test(); 
 
 	//test::r_t_test(); 
+
+	//test::fp_test(); 
+
+	//test::ar_coating(); 
+
+	test::hr_coating();
+
+	//test::fp_filter();
 	
 	std::cout << "Press enter to close\n";
 	std::cin.get();
