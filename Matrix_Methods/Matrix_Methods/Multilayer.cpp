@@ -470,11 +470,11 @@ std::vector<std::vector<std::complex<double>>> multilayer::transmission_matrix(d
 				}
 				
 				if (i == the_layers.size() - 2) {
-					if (loud) std::cout << i << ": M * T_{" << i + 1 << " , " << i + 2 << "}\n";
+					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "}\n";
 					M = vecut::cmat_cmat_product(M, T);
 				}
 				else {
-					if (loud) std::cout << i << ": M * T_{" << i + 1 << " , " << i + 2 << "} * P_{" << i + 2 << "}\n"; 
+					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "} * P_{" << i + 1 << "}\n"; 
 					Msub = vecut::cmat_cmat_product(T, P);
 					M = vecut::cmat_cmat_product(M, Msub);
 				}

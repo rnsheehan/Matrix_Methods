@@ -235,7 +235,7 @@ void test::fp_test()
 
 	W = 0.0; the_layers.push_back( layer(W, &ri_air) ); 
 	W = 2; the_layers.push_back( layer(W, &ri_si) );
-	W = 0.0; the_layers.push_back( layer(W, &ri_sin) );
+	W = 0.0; the_layers.push_back( layer(W, &ri_sio2) );
 
 	// Compute the r, t spectra
 	multilayer compute; 

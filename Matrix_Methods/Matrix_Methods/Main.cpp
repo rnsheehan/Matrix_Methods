@@ -14,11 +14,11 @@ int main()
 
 	//test::r_t_test(); 
 
-	//test::fp_test(); 
+	test::fp_test(); 
 
 	//test::ar_coating(); 
 
-	test::hr_coating();
+	//test::hr_coating();
 
 	//test::fp_filter();
 	
