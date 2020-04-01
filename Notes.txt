@@ -1,0 +1,8 @@
+Confirm that Fowles Method is working correctly
+
+Confirm that Yariv Method is working correctly
+
+	I seem to remember that methods were giving divergent answers the last time I looked
+
+Compare calculation output from both methods to theoretical Bragg calculation
+
