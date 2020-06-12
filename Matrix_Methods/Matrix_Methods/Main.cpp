@@ -4,7 +4,7 @@
 
 int main() 
 {
-	//test::matrix_test_2();
+	test::matrix_test_1();
 
 	//test::layer_test(); 
 
@@ -14,7 +14,7 @@ int main()
 
 	//test::r_t_test(); 
 
-	test::fp_test(); 
+	//test::fp_test(); 
 
 	//test::ar_coating(); 
 

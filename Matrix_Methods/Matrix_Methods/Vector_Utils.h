@@ -12,6 +12,8 @@ namespace vecut {
 	void write_into_file(std::string &filename, std::vector<double> &data, bool loud = false); 
 	void read_into_matrix(std::string &filename, std::vector<std::vector<double>> &data, int &n_rows, int &n_cols, bool loud = false);
 
+	void print_to_screen(std::vector<std::vector<double>> &matrix);
+
 	std::vector<std::vector<double>> mat_mat_product(std::vector<std::vector<double>> &mat1, std::vector<std::vector<double>> &mat2);
 	std::vector<std::vector<std::complex<double>>> cmat_cmat_product(std::vector<std::vector<std::complex<double>>> &mat1, std::vector<std::vector<std::complex<double>>> &mat2);
 

@@ -103,6 +103,46 @@ void vecut::read_into_vector(std::string &filename, std::vector<double> &data, i
 	}
 }
 
+void vecut::print_to_screen(std::vector<std::vector<double>> &matrix)
+{
+	// print the matrix to the screen, for practicality's sake limit the size of elements printed to 
+	// that of a 10*10
+	// R. Sheehan 11 - 6 - 2020
+
+	try {
+		if (!matrix.empty()) {
+			/*for (size_t i = 0; i < matrix.size(); i++) {
+				for (size_t j = 0; j < matrix[0].size(); j++)
+					std::cout << matrix[i][j] << " ";
+				std::cout << "\n";
+			}*/
+
+			int rows, cols; 
+			rows = std::min( 10, static_cast<int>( matrix.size() ) ); 
+			cols = std::min( 10, static_cast<int>( matrix[0].size() ) );
+
+			for (int i = 0; i < rows; i++) {
+				for (int j = 0; j < cols; j++)
+					std::cout << matrix[i][j] << " ";
+				std::cout << "\n";
+			}
+
+		}
+		else {
+			std::string reason = "Error: void vecut::print_to_screen(std::vector<std::vector<double>> &matrix)\n";
+			reason += "Matrix has not been assigned values\n";
+			throw std::invalid_argument(reason);
+		}
+	}
+	catch (std::invalid_argument& e) {
+		useful_funcs::exit_failure_output(e.what());
+		exit(EXIT_FAILURE);
+	}
+	catch (std::runtime_error& e) {
+		std::cerr << e.what();
+	}
+}
+
 void vecut::read_into_matrix(std::string &filename, std::vector<std::vector<double>> &data, int &n_rows, int &n_cols, bool loud)
 {
 	// read an array of data from a file

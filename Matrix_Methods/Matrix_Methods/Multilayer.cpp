@@ -147,7 +147,7 @@ std::complex<double> fresnel::reflection(bool polarisation, std::complex<double>
 
 std::complex<double> fresnel::transmission(bool polarisation, std::complex<double> angle)
 {
-	// compute the reflection coefficient for a dielectric interface
+	// compute the transmission coefficient for a dielectric interface
 
 	try {
 		if (params_defined) {
@@ -189,6 +189,8 @@ std::complex<double> fresnel::transmission(bool polarisation, std::complex<doubl
 
 void fresnel::compute_T(bool polarisation, double n_left, double n_right, std::complex<double> angle)
 {
+	// compute a dielectric interface transition matrix
+
 	try {
 		set_params(n_left, n_right); 
 
@@ -216,7 +218,7 @@ void fresnel::compute_T(bool polarisation, double n_left, double n_right, std::c
 
 std::vector<std::vector<std::complex<double>>> fresnel::transition_matrix()
 {
-	// return the transfer matrix of a given fowles_layer
+	// return a computed dielectric interface transition matrix
 
 	if (params_defined) {
 		return T;

@@ -32,15 +32,17 @@ void test::matrix_test_1()
 	// Result of product M2*M1
 	//M3[0][0] = -7; M3[0][1] = -25; M3[1][0] = -1; M3[1][1] = 9;
 
-	//M3 = vecut::mat_mat_product(M1, M2); 
-	M3 = vecut::mat_mat_product(M2, M1);
+	M3 = vecut::mat_mat_product(M1, M2); 
+	//M3 = vecut::mat_mat_product(M2, M1);
 
 	// print the result to the screen
-	for (size_t i = 0; i < M3.size(); i++) {
+	/*for (size_t i = 0; i < M3.size(); i++) {
 		for (size_t j = 0; j < M3[0].size(); j++)
 			std::cout << M3[i][j] << " ";
 		std::cout << "\n";
-	}
+	}*/
+
+	vecut::print_to_screen(M3); 
 }
 
 void test::matrix_test_2()
@@ -75,18 +77,20 @@ void test::matrix_test_2()
 	// Result of product M1*M2
 	/*M3[0][0] = 21; M3[0][1] = 4; M3[0][2] = 25; M3[0][3] = -84; M3[0][4] = 34; M3[0][5] = 30; M3[0][6] = 71;
 	M3[1][0] = 8; M3[1][1] = 23; M3[1][2] = 51; M3[1][3] = -69; M3[1][4] = 44; M3[1][5] = 33; M3[1][6] = 88;
-	M3[2][0] = 18; M3[2][1] = -24; M3[3][2] = -24; M3[3][3] = -54; M3[3][4] = 73; M3[3][5] = -12; M3[3][6] = -7;
+	M3[2][0] = 18; M3[2][1] = -24; M3[3][2] = -54; M3[3][3] = 73; M3[3][4] = -12; M3[3][5] = -18; M3[3][6] = -7;
 	M3[3][0] = 2; M3[3][1] = -41; M3[3][2] = -27; M3[3][3] = -17; M3[3][4] = 26; M3[3][5] = 19; M3[3][6] = 38;
 	M3[3][0] = 5; M3[3][1] = 42; M3[3][2] = 43; M3[3][3] = -5; M3[3][4] = 9; M3[3][5] = 3; M3[3][6] = 32;*/
 
 	M3 = vecut::mat_mat_product(M1, M2); 
 
 	// print the result to the screen
-	for (size_t i = 0; i < M3.size(); i++) {
+	/*for (size_t i = 0; i < M3.size(); i++) {
 		for (size_t j = 0; j < M3[0].size(); j++)
 			std::cout << M3[i][j] << " ";
 		std::cout << "\n";
-	}
+	}*/
+
+	vecut::print_to_screen(M3); 
 }
 
 void test::layer_test()
