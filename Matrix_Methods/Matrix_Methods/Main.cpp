@@ -4,7 +4,7 @@
 
 int main() 
 {
-	test::matrix_test_1();
+	//test::matrix_test_1();
 
 	//test::layer_test(); 
 
@@ -12,7 +12,7 @@ int main()
 
 	//test::high_low_test(); 
 
-	//test::r_t_test(); 
+	test::r_t_test(); 
 
 	//test::fp_test(); 
 

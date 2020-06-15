@@ -166,7 +166,13 @@ void test::r_t_test()
 
 	double n_in, n_out, angle; 
 
-	n_out = 1.0; n_in = 1.5; angle = PI_6; 
+	// Need to add conservation of energy confirmation
+
+	/*std::string filename = "Air_to_Glass.txt"; 
+	n_out = 1.5; n_in = 1.0; angle = PI_6;*/
+
+	std::string filename = "Glass_to_Air.txt";
+	n_out = 1.0; n_in = 1.5; angle = PI_6;
 
 	fresnel iface; 
 
@@ -174,16 +180,23 @@ void test::r_t_test()
 
 	std::complex<double> r = iface.reflection(TE, angle); 
 	std::complex<double> t = iface.transmission(TE, angle); 
+	std::complex<double> sum = r + t; 
 
 	std::cout << "|r|: " << abs(r) << "\n";
+	std::cout << "|t|: " << abs(t) << "\n";
+	std::cout << "|r| + |t|: " << abs(r) + abs(t) << "\n";
+	std::cout << "|r + t|: " << abs(sum) << "\n"; 
+	std::cout << "(|r| + |t|)^{1/2}: " << sqrt(abs(r) + abs(t)) << "\n";
+	std::cout << "|r + t|^{1/2}: " << sqrt(abs(sum)) << "\n"; 
 	std::cout << "|r|^{2}: " << template_funcs::DSQR(abs(r)) << "\n"; 
 	std::cout << "|t|^{2}: " << template_funcs::DSQR(abs(t)) << "\n";
-	std::cout << "|t|: " << abs(t) << "\n";
+	std::cout << "|r|^{2} + |t|^{2}: " << template_funcs::DSQR(abs(r)) + template_funcs::DSQR(abs(t)) << "\n";
+	std::cout << "|r + t|^{2}: " << template_funcs::DSQR(abs(sum)) << "\n";
+	std::cout << "(|r|^{2} + |t|^{2})^{1/2}: " << sqrt(template_funcs::DSQR(abs(r)) + template_funcs::DSQR(abs(t))) << "\n";
+	std::cout << "(|r + t|^{2})^{1/2}: " << sqrt(template_funcs::DSQR(abs(sum))) << "\n";
+	
 
 	// output the air-glass coefficients
-	//std::string filename = "Air_to_Glass.txt"; 
-
-	std::string filename = "Glass_to_Air.txt";
 	
 	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
 
@@ -195,16 +208,21 @@ void test::r_t_test()
 		write << "angle (rad), r_{TE}, t_{TE}, r_{TM}, t_{TM}\n"; 
 
 		int n_angle; 
-		double d_angle, angle_min, angle_max; 
+		double d_angle, angle_min, angle_max, v1, v2, v3, v4; 
 
 		n_angle = 201; 
 		angle_min = 0.0; angle_max = PI_2; 
-		d_angle = (angle_max - angle_min) / (n_angle - 1); 
+		d_angle = (angle_max - angle_min) / ( static_cast<double>(n_angle - 1) ); 
 
 		angle = angle_min; 
 		while (angle < angle_max + d_angle) {
 			
-			write << angle << " , " << abs(iface.reflection(TE, angle)) << " , " << abs(iface.transmission(TE, angle)) << " , " << abs(iface.reflection(TM, angle)) << " , " << abs(iface.transmission(TM, angle)) << "\n"; 
+			v1 = abs(iface.reflection(TE, angle)); 
+			v2 = abs(iface.transmission(TE, angle)); 
+			v3 = abs(iface.reflection(TM, angle)); 
+			v4 = abs(iface.transmission(TM, angle)); 
+
+			write << angle << " , " << v1 << " , " << v2 << " , " << v3 << " , " << v4 << "\n"; 
 
 			angle += d_angle; 
 		}
