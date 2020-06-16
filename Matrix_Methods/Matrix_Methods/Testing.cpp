@@ -164,37 +164,32 @@ void test::r_t_test()
 	// compute the transmisson and reflection coefficients for a dielectric interface
 	// R. Sheehan 31 - 7 - 2019
 
+	bool pol = TE; 
+
 	double n_in, n_out, angle; 
 
 	// Need to add conservation of energy confirmation
 
-	/*std::string filename = "Air_to_Glass.txt"; 
-	n_out = 1.5; n_in = 1.0; angle = PI_6;*/
+	std::string filename = "Air_to_Glass_R_T.txt"; 
+	n_out = 1.5; n_in = 1.0; angle = PI_6;
 
-	std::string filename = "Glass_to_Air.txt";
-	n_out = 1.0; n_in = 1.5; angle = PI_6;
+	/*std::string filename = "Glass_to_Air_R_T.txt";
+	n_out = 1.0; n_in = 1.5; angle = PI_6;*/
 
 	fresnel iface; 
 
 	iface.set_params(n_in, n_out); 
 
-	std::complex<double> r = iface.reflection(TE, angle); 
-	std::complex<double> t = iface.transmission(TE, angle); 
-	std::complex<double> sum = r + t; 
+	std::complex<double> r = iface.reflection(pol, angle); 
+	std::complex<double> t = iface.transmission(pol, angle); 
 
-	std::cout << "|r|: " << abs(r) << "\n";
-	std::cout << "|t|: " << abs(t) << "\n";
-	std::cout << "|r| + |t|: " << abs(r) + abs(t) << "\n";
-	std::cout << "|r + t|: " << abs(sum) << "\n"; 
-	std::cout << "(|r| + |t|)^{1/2}: " << sqrt(abs(r) + abs(t)) << "\n";
-	std::cout << "|r + t|^{1/2}: " << sqrt(abs(sum)) << "\n"; 
-	std::cout << "|r|^{2}: " << template_funcs::DSQR(abs(r)) << "\n"; 
-	std::cout << "|t|^{2}: " << template_funcs::DSQR(abs(t)) << "\n";
-	std::cout << "|r|^{2} + |t|^{2}: " << template_funcs::DSQR(abs(r)) + template_funcs::DSQR(abs(t)) << "\n";
-	std::cout << "|r + t|^{2}: " << template_funcs::DSQR(abs(sum)) << "\n";
-	std::cout << "(|r|^{2} + |t|^{2})^{1/2}: " << sqrt(template_funcs::DSQR(abs(r)) + template_funcs::DSQR(abs(t))) << "\n";
-	std::cout << "(|r + t|^{2})^{1/2}: " << sqrt(template_funcs::DSQR(abs(sum))) << "\n";
-	
+	std::cout << "r: " << r << "\n";
+	std::cout << "t: " << t << "\n";
+	std::cout << "TE Amplitude Relation t - r: " << t - r << "\n"; // this should be unity
+	std::cout << "TM Amplitude Relation (n_{2}/n_{1})t - r: " << (iface.get_n_ratio()*t) - r << "\n"; // this should be unity
+	std::cout << "Power Reflection Coefficient R: " << iface.Reflectivity(pol, angle) << "\n"; 
+	std::cout << "Power Transmission Coefficient T: " << iface.Transmissivity(pol, angle) << "\n";
+	std::cout << "Conservation of Energy R + T: " << iface.Reflectivity(pol, angle) + iface.Transmissivity(pol, angle) << "\n"; 
 
 	// output the air-glass coefficients
 	
@@ -208,7 +203,9 @@ void test::r_t_test()
 		write << "angle (rad), r_{TE}, t_{TE}, r_{TM}, t_{TM}\n"; 
 
 		int n_angle; 
-		double d_angle, angle_min, angle_max, v1, v2, v3, v4; 
+		double d_angle, angle_min, angle_max;
+		//double v1, v2, v3, v4;
+		std::complex<double> v1, v2, v3, v4;
 
 		n_angle = 201; 
 		angle_min = 0.0; angle_max = PI_2; 
@@ -217,12 +214,21 @@ void test::r_t_test()
 		angle = angle_min; 
 		while (angle < angle_max + d_angle) {
 			
-			v1 = abs(iface.reflection(TE, angle)); 
-			v2 = abs(iface.transmission(TE, angle)); 
-			v3 = abs(iface.reflection(TM, angle)); 
-			v4 = abs(iface.transmission(TM, angle)); 
+			// compute and output reflection and transmission coefficients
+			v1 = iface.reflection(TE, angle); 
+			v2 = iface.transmission(TE, angle); 
+			v3 = iface.reflection(TM, angle); 
+			v4 = iface.transmission(TM, angle); 
 
-			write << angle << " , " << v1 << " , " << v2 << " , " << v3 << " , " << v4 << "\n"; 
+			write << angle << " , " << v1.imag() << " , " << v2.imag() << " , " << v3.imag() << " , " << v4.imag() << "\n"; 
+
+			// compute and output power reflection and power transmision coefficients
+			/*v1 = iface.Reflectivity(TE, angle);
+			v2 = iface.Transmissivity(TE, angle);
+			v3 = iface.Reflectivity(TM, angle);
+			v4 = iface.Transmissivity(TM, angle);
+
+			write << angle << " , " << v1 << " , " << v2 << " , " << v3 << " , " << v4 << "\n";*/ 
 
 			angle += d_angle; 
 		}

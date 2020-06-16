@@ -27,18 +27,18 @@ def iface_r_t():
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
 
     try:
-        #filename = "Air_to_Glass.txt"
-        filename = "Glass_to_Air.txt"
+        filename = "Air_to_Glass_R_T.txt"
+        #filename = "Glass_to_Air_R_T.txt"
             
         if glob.glob(filename):
             # import the dataset
             data = np.loadtxt(filename, delimiter = ',', skiprows = 4, unpack = True)
 
             hv_data = []; labels = []; marks = [];
-            hv_data.append([data[0], data[1]]); labels.append('$|r|_{TE}$'); marks.append(Plotting.labs_lins[0]); 
-            hv_data.append([data[0], data[3]]); labels.append('$|r|_{TM}$'); marks.append(Plotting.labs_dashed[0]); 
-            hv_data.append([data[0], data[2]]); labels.append('$|t|_{TE}$'); marks.append(Plotting.labs_lins[1]);
-            hv_data.append([data[0], data[4]]); labels.append('$|t|_{TM}$'); marks.append(Plotting.labs_dashed[1]); 
+            hv_data.append([data[0], data[1]]); labels.append('$r_{TE}$'); marks.append(Plotting.labs_lins[0]); 
+            hv_data.append([data[0], data[3]]); labels.append('$r_{TM}$'); marks.append(Plotting.labs_dashed[0]); 
+            hv_data.append([data[0], data[2]]); labels.append('$t_{TE}$'); marks.append(Plotting.labs_lins[1]);
+            hv_data.append([data[0], data[4]]); labels.append('$t_{TM}$'); marks.append(Plotting.labs_dashed[1]); 
                             
             # make the plot of the data set
             args = Plotting.plot_arg_multiple()

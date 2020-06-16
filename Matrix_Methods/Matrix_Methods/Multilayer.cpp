@@ -12,6 +12,8 @@ fresnel::fresnel()
 	n1 = n2 = nrat = nrat_sqr = 0.0;
 
 	theta_in = theta_t = theta_critical = theta_brewster = zero;
+
+	cos_theta_1 = cos_theta_2 = cos_ratio = zero; 
 }
 
 fresnel::fresnel(double n_left, double n_right)
@@ -36,6 +38,7 @@ void fresnel::set_params(double n_left, double n_right)
 
 		if (c10) {
 			n1 = n_left;
+
 			n2 = n_right;		 
 			
 			nrat = n2 / n1; // nrat > 1 => external reflection, nrat < 1 => internal reflection
@@ -76,16 +79,18 @@ void fresnel::set_angles(std::complex<double> angle)
 				
 				theta_t = zero; 
 
-				cos_theta_1 = cos_theta_2 = 1.0; 
+				cos_theta_1 = cos_theta_2 = cos_ratio = 1.0;
 			}
 			else {
-				theta_in = angle;
+				theta_in = angle; // angle of incidence
 
 				theta_t = asin((n1 / n2)*sin(theta_in)); // transmission angle 
 
 				cos_theta_1 = cos(theta_in); // cosine of input angle 
 
 				cos_theta_2 = cos(theta_t); // cosine of transmission angle
+
+				cos_ratio = abs(cos_theta_1) > 0.0 ? cos_theta_2 / cos_theta_1 : 1.0 ; 
 			}			
 		}
 		else {
@@ -160,10 +165,10 @@ std::complex<double> fresnel::transmission(bool polarisation, std::complex<doubl
 
 			numer = 2.0 * t1; 
 
-			if (polarisation) { // TE reflection coefficient
+			if (polarisation) { // TE transmission coefficient
 				denom = t1 + n2 * cos_theta_2;
 			}
-			else { // TM reflection coefficient
+			else { // TM transmission coefficient
 				denom = n2 * cos_theta_1 + n1 * cos_theta_2;
 			}
 
@@ -185,6 +190,20 @@ std::complex<double> fresnel::transmission(bool polarisation, std::complex<doubl
 		useful_funcs::exit_failure_output(e.what());
 		exit(EXIT_FAILURE);
 	}
+}
+
+double fresnel::Reflectivity(bool polarisation, std::complex<double> angle)
+{
+	// Compute the Power Reflection Coefficient R = |r|^{2}
+
+	return template_funcs::DSQR( abs( reflection(polarisation, angle) ) ); 
+}
+
+double fresnel::Transmissivity(bool polarisation, std::complex<double> angle)
+{
+	// Compute the Power Transmission Coefficient T = (n_{2}/n_{1}) ( cos(phi) / cos(theta) ) |t|^{2}
+
+	return ( nrat * cos_ratio.real() * template_funcs::DSQR( abs( transmission(polarisation, angle) ) ) );
 }
 
 void fresnel::compute_T(bool polarisation, double n_left, double n_right, std::complex<double> angle)

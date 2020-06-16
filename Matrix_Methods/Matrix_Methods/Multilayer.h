@@ -26,12 +26,19 @@ public:
 
 	void set_params(double n_left, double n_right);	
 
+	inline double get_n_ratio() { return nrat;  } // return n_{2} / n_{1}
+	
+
 	inline std::complex<double> get_theta_t() { return theta_t;  } // output transmission angle
 	inline std::complex<double> get_theta_critical() { return theta_critical;  } // output transmission angle
 	inline std::complex<double> get_theta_brewster() { return theta_brewster;  } // output transmission angle
+	inline std::complex<double> get_cos_ratio() { return cos_ratio; } // return cos(theta_{1}) / cos(theta_{1})
 
 	std::complex<double> reflection(bool polarisation, std::complex<double> angle);
 	std::complex<double> transmission(bool polarisation, std::complex<double> angle);
+	
+	double Reflectivity(bool polarisation, std::complex<double> angle);
+	double Transmissivity(bool polarisation, std::complex<double> angle); 
 
 	void compute_T(bool polarisation, double n_left, double n_right, std::complex<double> angle);
 
@@ -65,6 +72,7 @@ private:
 
 	std::complex<double> cos_theta_1; // cosine of the input propagation angle 
 	std::complex<double> cos_theta_2; // cosine of the transmission propagation angle 
+	std::complex<double> cos_ratio; // ratio of the cosines of the angles 
 
 	std::vector<std::vector<std::complex<double>>> T;  // array to store dielectric interface transition matrix
 };
