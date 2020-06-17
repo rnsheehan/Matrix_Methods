@@ -6,7 +6,9 @@ int main()
 {
 	//test::matrix_test_1();
 
-	test::layer_test(); 
+	//test::layer_test(); 
+
+	test::AR_Coating(); 
 
 	//test::AR_filter_test();
 

@@ -203,7 +203,7 @@ void fowles_layer::layer_stats()
 				std::cout << M[i][j] << " ";
 			std::cout << "\n"; 
 		}
-		std::cout << "|M|: " << M[0][0] * M[1][1] - M[0][1] * M[1][0] << "\n"; 
+		std::cout << "|M|: " << M[0][0] * M[1][1] - M[0][1] * M[1][0] << "\n\n"; 
 	}
 
 }

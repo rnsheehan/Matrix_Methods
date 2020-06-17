@@ -10,6 +10,8 @@ namespace test {
 
 	void layer_test();
 
+	void AR_Coating();
+
 	void AR_filter_test(); 
 
 	void high_low_test(); 

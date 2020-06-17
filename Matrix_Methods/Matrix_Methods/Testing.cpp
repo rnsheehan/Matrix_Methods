@@ -131,6 +131,60 @@ void test::layer_test()
 	}
 }
 
+void test::AR_Coating()
+{
+	// Use Fowles / Born & Wolf method to compute the reflection spectrum of an AR coating
+	// R. Sheehan 17 - 6 - 2020
+
+	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
+	double wavelength = 1550; // wavelength in nm
+	
+	double cladding_index = 1.0; // RI value at some wavelength
+	double layer_index = 1.35; // n1 ~ sqrt(n2) for AR coating
+	double substrate_index = 1.5; // RI value at some wavelength
+
+	// layer thickness must be chosen according to n1 l = lambda / 4 for AR coating
+	double thickness = wavelength / (4.0*layer_index); // layer thickness in nm
+
+	std::cout << "AR Coating Thickness: " << thickness << "\n\n"; 
+
+	fowles_layer l1;
+
+	l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true);
+
+	// loop over the layer length and output the reflectivity
+	std::string filename = "Air_MgF2_Glass.txt"; 
+	//std::string filename = "Air_SiO2_SiN.txt"; 
+
+	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+
+	if (write.is_open()) {
+
+		fowles_layer l1; 
+		fowles_layer l2; 
+		fowles_layer l3; 
+		fowles_layer l4; 
+		fowles_layer l5; 
+
+		wavelength = 750.0;
+		while (wavelength < 2500.0) {
+			thickness = 1550.0 / (4.0 * layer_index); // layer thickness in nm
+
+			l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index);
+			l2.set_params(TE, angle_in, 2.0*thickness, wavelength, cladding_index, layer_index, substrate_index);
+			l3.set_params(TE, angle_in, 3.0*thickness, wavelength, cladding_index, layer_index, substrate_index);
+			l4.set_params(TE, angle_in, 4.0*thickness, wavelength, cladding_index, layer_index, substrate_index);
+			l5.set_params(TE, angle_in, 5.0*thickness, wavelength, cladding_index, layer_index, substrate_index);
+			
+			write << wavelength << " , " << l1.get_R() << " , " << l2.get_R() << " , " << l3.get_R() << " , " << l4.get_R() << " , " << l5.get_R() << "\n";
+
+			wavelength += 1.0;
+		}
+
+		write.close(); 
+	}	
+}
+
 void test::AR_filter_test()
 {
 	// example calculation for computing reflectance of simple structure
