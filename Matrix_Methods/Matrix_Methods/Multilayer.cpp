@@ -622,85 +622,85 @@ void multilayer_old::set_params(sweep &swp_obj, material *the_layer, material *t
 	}
 }
 
-void multilayer_old::compute_r_t_Fowles(int n_fowles_layers, double layer_thickness, bool loud)
-{
-	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
-	// R. Sheehan 15 - 7 - 2019
-
-	try {
-		bool c1 = n_fowles_layers > 0 ? true : false;
-		bool c2 = layer_thickness > 0 ? true : false;
-		bool c10 = c1 && c2 && wavelength.defined();
-
-		if (c10) {
-			// sweep over all wavelengths
-			double lambda, RI_fowles_layer, RI_clad, RI_sub;
-			std::complex<double> reflectance, transmittance;
-			std::string filename;
-			filename = "Fowles_multifowles_layer_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(layer_thickness, 2) + "_fowles_layer_Thickness.txt";
-			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  layer thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n";
-			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
-
-				lambda = wavelength.get_val(i); // assign wavelength value
-
-				layer_mat->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
-
-				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
-
-				RI_fowles_layer = layer_mat->refractive_index(); // compute wavelength dependent refractive index at this wavelength
-
-				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
-				fowles_layer this_fowles_layer(layer_thickness, lambda, RI_fowles_layer); // compute transfer matrix for the fowles_layer at this wavelength
-
-				// get transfer matrix for all fowles_layers
-				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
-				for (int j = 0; j < n_fowles_layers; j++) {
-
-					if (j == 0) {
-						M = this_fowles_layer.transfer_matrix();
-					}
-					else {
-						std::vector<std::vector<std::complex<double>>> Mnow = this_fowles_layer.transfer_matrix();
-						M = vecut::cmat_cmat_product(M, Mnow);
-					}
-				}
-
-				// compute reflectance and transmittance of the structure at this wavelength
-
-				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
-
-				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
-
-				spectrum::compute(RI_clad, RI_sub, M, reflectance, transmittance); // compute the wavelength dependent r, t values from the wavelength dependent M(\lambda)
-
-				r.push_back(reflectance); // store reflectance
-
-				t.push_back(transmittance); // store transmittance
-
-				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
-
-				write << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
-			}
-
-			write.close();
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multifowles_layer::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness, bool loud)\n";
-			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
-			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(layer_thickness, 2) + " is not valid\n";
-			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void multilayer_old::compute_r_t_Fowles(int n_fowles_layers, double layer_thickness, bool loud)
+//{
+//	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
+//	// R. Sheehan 15 - 7 - 2019
+//
+//	try {
+//		bool c1 = n_fowles_layers > 0 ? true : false;
+//		bool c2 = layer_thickness > 0 ? true : false;
+//		bool c10 = c1 && c2 && wavelength.defined();
+//
+//		if (c10) {
+//			// sweep over all wavelengths
+//			double lambda, RI_fowles_layer, RI_clad, RI_sub;
+//			std::complex<double> reflectance, transmittance;
+//			std::string filename;
+//			filename = "Fowles_multifowles_layer_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(layer_thickness, 2) + "_fowles_layer_Thickness.txt";
+//			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  layer thickness: " + template_funcs::toString(layer_thickness, 2) + " um\n";
+//			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+//
+//				lambda = wavelength.get_val(i); // assign wavelength value
+//
+//				layer_mat->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+//
+//				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+//
+//				RI_fowles_layer = layer_mat->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+//
+//				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
+//				fowles_layer this_fowles_layer(layer_thickness, lambda, RI_fowles_layer); // compute transfer matrix for the fowles_layer at this wavelength
+//
+//				// get transfer matrix for all fowles_layers
+//				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
+//				for (int j = 0; j < n_fowles_layers; j++) {
+//
+//					if (j == 0) {
+//						M = this_fowles_layer.transfer_matrix();
+//					}
+//					else {
+//						std::vector<std::vector<std::complex<double>>> Mnow = this_fowles_layer.transfer_matrix();
+//						M = vecut::cmat_cmat_product(M, Mnow);
+//					}
+//				}
+//
+//				// compute reflectance and transmittance of the structure at this wavelength
+//
+//				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+//
+//				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
+//
+//				spectrum::compute(RI_clad, RI_sub, M, reflectance, transmittance); // compute the wavelength dependent r, t values from the wavelength dependent M(\lambda)
+//
+//				r.push_back(reflectance); // store reflectance
+//
+//				t.push_back(transmittance); // store transmittance
+//
+//				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+//
+//				write << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+//			}
+//
+//			write.close();
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multifowles_layer::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness, bool loud)\n";
+//			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
+//			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(layer_thickness, 2) + " is not valid\n";
+//			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 void multilayer_old::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
 {
@@ -849,100 +849,100 @@ void HL_stack::set_params(sweep &swp_obj, material *h_fowles_layer, material *l_
 	}
 }
 
-void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness, bool loud)
-{
-	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
-	// R. Sheehan 15 - 7 - 2019
-
-	try {
-		bool c1 = n_fowles_layers > 0 ? true : false;
-		bool c2 = fowles_layer_thickness > 0 ? true : false;
-		bool c10 = c1 && c2 && wavelength.defined();
-
-		if (c10) {
-			// sweep over all wavelengths
-			int total_fowles_layers = 2 * n_fowles_layers;
-			double lambda, RI_h, RI_l, RI_clad, RI_sub;
-			std::complex<double> reflectance, transmittance;
-			std::string filename;
-			filename = "Fowles_HL_stack_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
-			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
-			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
-
-				lambda = wavelength.get_val(i); // assign wavelength value
-
-				layer_high->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				layer_low->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
-
-				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
-
-				RI_h = layer_high->refractive_index(); // compute wavelength dependent refractive index at this wavelength
-
-				RI_l = layer_low->refractive_index(); // compute wavelength dependent refractive index at this wavelength
-
-				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
-				fowles_layer H_fowles_layer(fowles_layer_thickness, lambda, RI_h); // compute transfer matrix for the fowles_layer at this wavelength
-
-				fowles_layer L_fowles_layer(fowles_layer_thickness, lambda, RI_l); // compute transfer matrix for the fowles_layer at this wavelength
-
-				std::vector<std::vector<std::complex<double>>> Mnow;
-
-				// get transfer matrix for all fowles_layers
-				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
-				for (int j = 0; j < total_fowles_layers; j++) {
-
-					if (j % 2 == 0) {
-						Mnow = L_fowles_layer.transfer_matrix();
-					}
-					else {
-						Mnow = H_fowles_layer.transfer_matrix();
-					}
-
-					if (j == 0) {
-						M = Mnow;
-					}
-					else {
-						M = vecut::cmat_cmat_product(M, Mnow);
-					}
-				}
-
-				// compute reflectance and transmittance of the structure at this wavelength
-
-				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
-
-				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
-
-				spectrum::compute(RI_clad, RI_sub, M, reflectance, transmittance); // compute the wavelength dependent r, t values from the wavelength dependent M(\lambda)
-
-				r.push_back(reflectance); // store reflectance
-
-				t.push_back(transmittance); // store transmittance
-
-				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
-
-				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
-			}
-
-			write.close();
-		}
-		else {
-			std::string reason;
-			reason = "Error: void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness)\n";
-			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
-			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
-			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness, bool loud)
+//{
+//	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
+//	// R. Sheehan 15 - 7 - 2019
+//
+//	try {
+//		bool c1 = n_fowles_layers > 0 ? true : false;
+//		bool c2 = fowles_layer_thickness > 0 ? true : false;
+//		bool c10 = c1 && c2 && wavelength.defined();
+//
+//		if (c10) {
+//			// sweep over all wavelengths
+//			int total_fowles_layers = 2 * n_fowles_layers;
+//			double lambda, RI_h, RI_l, RI_clad, RI_sub;
+//			std::complex<double> reflectance, transmittance;
+//			std::string filename;
+//			filename = "Fowles_HL_stack_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
+//			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
+//			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+//
+//				lambda = wavelength.get_val(i); // assign wavelength value
+//
+//				layer_high->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				layer_low->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+//
+//				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+//
+//				RI_h = layer_high->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+//
+//				RI_l = layer_low->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+//
+//				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
+//				fowles_layer H_fowles_layer(fowles_layer_thickness, lambda, RI_h); // compute transfer matrix for the fowles_layer at this wavelength
+//
+//				fowles_layer L_fowles_layer(fowles_layer_thickness, lambda, RI_l); // compute transfer matrix for the fowles_layer at this wavelength
+//
+//				std::vector<std::vector<std::complex<double>>> Mnow;
+//
+//				// get transfer matrix for all fowles_layers
+//				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
+//				for (int j = 0; j < total_fowles_layers; j++) {
+//
+//					if (j % 2 == 0) {
+//						Mnow = L_fowles_layer.transfer_matrix();
+//					}
+//					else {
+//						Mnow = H_fowles_layer.transfer_matrix();
+//					}
+//
+//					if (j == 0) {
+//						M = Mnow;
+//					}
+//					else {
+//						M = vecut::cmat_cmat_product(M, Mnow);
+//					}
+//				}
+//
+//				// compute reflectance and transmittance of the structure at this wavelength
+//
+//				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+//
+//				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
+//
+//				spectrum::compute(RI_clad, RI_sub, M, reflectance, transmittance); // compute the wavelength dependent r, t values from the wavelength dependent M(\lambda)
+//
+//				r.push_back(reflectance); // store reflectance
+//
+//				t.push_back(transmittance); // store transmittance
+//
+//				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+//
+//				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << template_funcs::DSQR(abs(reflectance)) << " , " << template_funcs::DSQR(abs(transmittance)) << "\n";
+//			}
+//
+//			write.close();
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness)\n";
+//			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
+//			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
+//			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 void HL_stack::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
 {

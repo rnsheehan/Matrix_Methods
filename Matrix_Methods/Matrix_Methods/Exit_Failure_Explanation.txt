@@ -1,7 +1,0 @@
-Program Exit Explanation
-
-Error occurred: Tue Aug 13 14:42:46 2019
-
-Error: void propagation::set_params(double wavelength, double index, double thickness, std::complex<double> angle)
-Input values not correctly defined
-

@@ -60,6 +60,47 @@ def iface_r_t():
         print(ERR_STATEMENT)
         print(e)
 
+def layer_r_t():
+    # make a plot of the computed dielectric layer reflection / transmission curves
+    # R. Sheehan 17 - 6 - 2020
+
+    FUNC_NAME = ".layer_r_t()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+
+    try:
+        filename = "Air_Silicon_Silica_R_T.txt"
+        #filename = "Air_Silica_Silicon_R_T.txt"
+        if glob.glob(filename):
+            # import the dataset
+            data = np.loadtxt(filename, delimiter = ',', unpack = True)
+
+            hv_data = []; labels = []; marks = [];
+            hv_data.append([data[0]/1550.0, data[1]]); labels.append('$R_{TE}$'); marks.append(Plotting.labs_lins[0]); 
+            hv_data.append([data[0]/1550.0, data[3]]); labels.append('$R_{TM}$'); marks.append(Plotting.labs_dashed[0]); 
+            hv_data.append([data[0]/1550.0, data[2]]); labels.append('$T_{TE}$'); marks.append(Plotting.labs_lins[1]);
+            hv_data.append([data[0]/1550.0, data[4]]); labels.append('$T_{TM}$'); marks.append(Plotting.labs_dashed[1]); 
+                            
+            # make the plot of the data set
+            args = Plotting.plot_arg_multiple()
+
+            args.loud = True
+            args.crv_lab_list = labels
+            args.mrk_list = marks
+            args.x_label = 'Layer Thickness / Wavelength'
+            args.y_label = 'Reflectivity / Transmissivity'
+            args.plt_range = [data[0][0]/1550.0, data[0][-1]/1550.0, 0.0, 1.0]
+            args.fig_name = filename.replace('.txt','')
+
+            Plotting.plot_multiple_curves(hv_data, args)
+
+            del hv_data; del labels; del marks; 
+            
+        else:
+            raise Exception
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
+
 def main():
     pass
 
@@ -70,4 +111,6 @@ if __name__ == '__main__':
 
     print(pwd)
     
-    iface_r_t()
+    #iface_r_t()
+
+    layer_r_t()

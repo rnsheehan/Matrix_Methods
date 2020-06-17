@@ -6,13 +6,13 @@ int main()
 {
 	//test::matrix_test_1();
 
-	//test::layer_test(); 
+	test::layer_test(); 
 
 	//test::AR_filter_test();
 
 	//test::high_low_test(); 
 
-	test::r_t_test(); 
+	//test::r_t_test(); 
 
 	//test::fp_test(); 
 

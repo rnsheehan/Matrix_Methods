@@ -98,13 +98,37 @@ void test::layer_test()
 	// see if the layer class is working correctly
 	// R. Sheehan 15 - 7 - 2019
 
-	double thickness = 100; // layer thickness in nm
+	double angle_in = (20.0)* DEG_TO_RAD; // input angle in units of radians
 	double wavelength = 1550; // wavelength in nm
-	double index = 3.48; // RI value at some wavelength
+	double thickness = 0.75*wavelength; // layer thickness in nm
+	double cladding_index = 1.0; // RI value at some wavelength
+	double layer_index = 3.48; // RI value at some wavelength
+	double substrate_index = 1.45; // RI value at some wavelength
 
 	fowles_layer l1; 
+	fowles_layer l2; 
 
-	l1.set_params(thickness, wavelength, index); 
+	l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+	l1.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+
+	// loop over the layer length and output the reflectivity
+	std::string filename = "Air_Silicon_Silica_R_T.txt"; 
+	//std::string filename = "Air_Silica_Silicon_R_T.txt";
+	
+	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+
+	if (write.is_open()) {
+		angle_in = (20.0) * DEG_TO_RAD; // input angle in units of radians
+		
+		thickness = 1000.0; 
+		while (thickness < 2000.0) {
+			l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index); 
+			l2.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index); 
+			write << thickness << " , " << l1.get_R() << " , " << l1.get_T() << " , " << l2.get_R() << " , " << l2.get_T() << "\n";
+			thickness += 1.0; 
+		}
+		write.close(); 
+	}
 }
 
 void test::AR_filter_test()
