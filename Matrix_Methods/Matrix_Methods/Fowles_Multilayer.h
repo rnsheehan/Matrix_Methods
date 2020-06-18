@@ -6,7 +6,7 @@
 // R. Sheehan 15 - 7 - 2019
 
 namespace spectrum {
-	void compute(double &n_clad, double &n_sub, std::vector<std::vector<std::complex<double>>> &M, std::complex<double> &r, std::complex<double> &t);
+	void compute_r_t(double &p_in, double &p_out, std::vector<std::vector<std::complex<double>>> &M, std::complex<double> &r, std::complex<double> &t, double &R, double &T);
 }
 
 // class implements a method for computing the transfer matrix of a layer of dielectric material
@@ -21,20 +21,33 @@ public:
 	~fowles_layer();
 
 	inline double get_theta_out() { return theta_out;  }
+	inline double get_theta_layer() { return theta_layer;  }
+	inline double get_p_in() { return p0;  }
+	inline double get_p_layer() { return p1;  }
+	inline double get_p_out() { return p2;  }
 	inline double get_R() { return R;  }
 	inline double get_T() { return T;  }
+	inline std::complex<double> get_r() { return r; }
+	inline std::complex<double> get_t() { return t; }
+
+	std::vector< std::vector< std::complex<double> > > transfer_matrix();
 
 	void set_params(bool pol, double theta_in, double thickness, double wavelength, double n0, double n1, double n2, bool loud = false);
 	void layer_stats(); 
 
-	std::vector<std::vector<std::complex<double>>> transfer_matrix();
-
 private:
 	bool defined;
 	
+	double theta_inc; // wavevector angle at input
+	double theta_layer; // wavevector angle inside the layer
 	double theta_out; // wavevector angle after the layer
+
 	double R; // layer Power reflectivity
 	double T; // layer Power transmissivity
+	
+	double p0; // polarisation dependent wavevector scale factor at input
+	double p1; // polarisation dependent wavevector scale factor inside layer
+	double p2; // polarisation dependent wavevector scale factor at output
 
 	std::complex<double> r; // layer reflection coefficient
 	std::complex<double> t; // layer transmission coefficient

@@ -165,7 +165,7 @@ public:
 
 	void set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate);
 
-	void compute_r_t_Fowles(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
+	//void compute_r_t_Fowles(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
 
 	void compute_r_t(int n_layers, double layer_thickness, bool loud = false);
 
@@ -195,7 +195,7 @@ public:
 
 	void set_params(sweep &swp_obj, material *h_layer, material *l_layer, material *the_cladding, material *the_substrate);
 
-	void compute_r_t_Fowles(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
+	//void compute_r_t_Fowles(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
 
 	void compute_r_t(int n_layers, double layer_thickness, bool loud = false); // make N and thickness an input parameter here. 
 

@@ -105,7 +105,7 @@ def layer_AR():
     # make a plot of the computed dielectric layer AR coating reflection curve
     # R. Sheehan 17 - 6 - 2020
 
-    FUNC_NAME = ".layer_r_t()" # use this in exception handling messages
+    FUNC_NAME = ".layer_AR()" # use this in exception handling messages
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
 
     try:
@@ -144,6 +144,44 @@ def layer_AR():
         print(ERR_STATEMENT)
         print(e)
 
+def layer_HR():
+    # make a plot of the computed dielectric layer AR coating reflection curve
+    # R. Sheehan 17 - 6 - 2020
+
+    FUNC_NAME = ".layer_HR()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+
+    try:
+        filename = "HR_Coating.txt"
+        if glob.glob(filename):
+            # import the dataset
+            data = np.loadtxt(filename, delimiter = ',', unpack = True)
+
+            hv_data = []; labels = []; marks = [];
+            hv_data.append([data[0], data[1]]); labels.append('R'); marks.append(Plotting.labs_lins[0]);
+            hv_data.append([data[0], data[2]]); labels.append('T'); marks.append(Plotting.labs_lins[1]); 
+                            
+            # make the plot of the data set
+            args = Plotting.plot_arg_multiple()
+
+            args.loud = True
+            args.crv_lab_list = labels
+            args.mrk_list = marks
+            args.x_label = 'Wavelength nm'
+            args.y_label = 'Reflectivity / Transmissivity'
+            args.plt_range = [data[0][0], data[0][-1], 0.0, 1.0]
+            args.fig_name = filename.replace('.txt','')
+
+            Plotting.plot_multiple_curves(hv_data, args)
+
+            del hv_data; del labels; del marks; 
+            
+        else:
+            raise Exception
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
+
 def main():
     pass
 
@@ -152,10 +190,12 @@ if __name__ == '__main__':
 
     pwd = os.getcwd() # get current working directory
 
-    print(pwd)
+    #print(pwd)
     
     #iface_r_t()
 
     #layer_r_t()
 
-    layer_AR()
+    #layer_AR()
+
+    layer_HR()

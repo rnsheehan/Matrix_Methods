@@ -8,7 +8,9 @@ int main()
 
 	//test::layer_test(); 
 
-	test::AR_Coating(); 
+	//test::AR_Coating(); 
+
+	test::HR_Coating(); 
 
 	//test::AR_filter_test();
 

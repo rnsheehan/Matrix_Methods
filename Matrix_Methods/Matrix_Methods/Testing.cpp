@@ -109,7 +109,32 @@ void test::layer_test()
 	fowles_layer l2; 
 
 	l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+
+	// test the alternative R calculator
+	double p0 = l1.get_p_in(), p2 = l1.get_p_out(), R, T;
+	std::complex<double> r, t; 
+	std::vector<std::vector<std::complex<double>>> M = l1.transfer_matrix(); 
+	spectrum::compute_r_t(p0, p2, M, r, t, R, T); 
+
+	std::cout << "R calc test\n";
+	std::cout << "r: " << r << "\n"; 
+	std::cout << "t: " << r << "\n"; 
+	std::cout << "R: " << R << "\n"; 
+	std::cout << "T: " << T << "\n"; 
+	std::cout << "R + T: " << R + T << "\n\n"; 
+
 	l1.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+
+	p0 = l1.get_p_in(), p2 = l1.get_p_out();
+	M = l1.transfer_matrix();
+	spectrum::compute_r_t(p0, p2, M, r, t, R, T);
+
+	std::cout << "R calc test\n";
+	std::cout << "r: " << r << "\n";
+	std::cout << "t: " << r << "\n";
+	std::cout << "R: " << R << "\n";
+	std::cout << "T: " << T << "\n";
+	std::cout << "R + T: " << R + T << "\n\n";
 
 	// loop over the layer length and output the reflectivity
 	std::string filename = "Air_Silicon_Silica_R_T.txt"; 
@@ -183,6 +208,110 @@ void test::AR_Coating()
 
 		write.close(); 
 	}	
+}
+
+void test::HR_Coating()
+{
+	// Use Fowles Born & Wolf to compute spectrum of HR coating 
+	// which comprises an even number of alternating layers of high RI and low RI material
+	// each layer must have optical thickness of lambda_{0} / 4 for peak reflectivity at lambda_{0}
+	// R. Sheehan 18 - 6 - 2020
+
+	bool pol = TE; 
+	
+	int n_layer_pairs = 5; 
+
+	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
+	double lambda_0 = 550; // wavelength in nm
+
+	double cladding_index = 1.0; // RI value at some wavelength
+	double high_index = 2.3; 
+	double low_index = 1.35; 
+	double substrate_index = 2.0; // RI value at some wavelength
+
+	// define the layer thicknesses lambda_0
+	double t_high = lambda_0 / (4.0 * high_index), t_low = lambda_0 / (4.0 * low_index);
+	//double t_high = lambda_0 / (4.0 * high_index), t_low = t_high;
+
+	// sweep over all wavelengths
+	int n_wl = 400, size = 2;
+	double l1 = 300, l2 = 800, p_first, p_last; 
+	sweep wavelengths(n_wl, l1, l2); 
+
+	std::string filename = "HR_Coating.txt";
+	std::ofstream write; 
+
+	for (int i = 0; i < wavelengths.get_Nsteps(); i++) {
+		
+		double n0, n2, angle, R, T;
+
+		std::complex<double> r, t; 
+
+		std::vector<std::vector<std::complex<double>>> M = vecut::zero_cmat(size, size); 
+		std::vector<std::vector<std::complex<double>>> Mnow = vecut::zero_cmat(size, size); 
+
+		// compute the transfer matrix for the high and low RI layers
+		fowles_layer high;
+		fowles_layer low;
+
+		for (int j = 0; j <= n_layer_pairs; j++) {
+
+			if (j == 0) {
+				// air-high interface
+				n0 = cladding_index; 
+				n2 = low_index;
+				angle = angle_in; 
+			}
+			else if (j == n_layer_pairs) {
+				//low-substrate interface
+				n0 = low_index;
+				n2 = substrate_index; 
+				angle = low.get_theta_out();
+			}
+			else {
+				// high-low interfaces
+				n0 = low_index; 
+				n2 = low_index;
+				angle = low.get_theta_out(); 
+			}
+
+			high.set_params(pol, angle, t_high, wavelengths.get_val(i), n0, high_index, low_index);
+			
+			if (j == 0) {
+				M = high.transfer_matrix(); 
+				p_first = high.get_p_in();
+			}
+			else {
+				Mnow = high.transfer_matrix();
+				M = vecut::cmat_cmat_product(M, Mnow); // Mh Ml Mh
+			}			
+
+			low.set_params(pol, high.get_theta_out(), t_low, wavelengths.get_val(i), high_index, low_index, n2);
+			Mnow = low.transfer_matrix();
+			M = vecut::cmat_cmat_product(M, Mnow); // Mh Ml Mh Ml
+
+			if (j == n_layer_pairs) {
+				p_last = low.get_p_out();
+			}
+		}
+		
+		// M contains the product of all the transfer matrices
+		// Compute the reflection coeffs etc for this wavelength
+		spectrum::compute_r_t(p_first, p_last, M, r, t, R, T);
+
+		// output the computed data
+		if (i == 0) {
+			write.open(filename, std::ios_base::out, std::ios_base::trunc);
+		}
+		else {
+			write.open(filename, std::ios_base::app);
+		}
+		
+		if (write.is_open()) {
+			write << wavelengths.get_val(i) << " , " << R << " , " << T << "\n"; 
+			write.close(); 
+		}
+	}
 }
 
 void test::AR_filter_test()

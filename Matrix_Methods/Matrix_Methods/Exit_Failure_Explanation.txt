@@ -1,0 +1,6 @@
+Program Exit Explanation
+
+Error occurred: Thu Jun 18 18:17:10 2020
+
+Error: void fowles_layer::set_params(double thickness, double wavelength, double ref_index)
+
