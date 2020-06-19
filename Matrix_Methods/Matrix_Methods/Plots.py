@@ -117,7 +117,7 @@ def layer_AR():
 
             hv_data = []; labels = []; marks = [];
             #hv_data.append([data[0], data[1]]); labels.append('T = 267.24 nm'); marks.append(Plotting.labs_lins[0]);
-            hv_data.append([data[0], data[1]]); labels.append('T = 287.04 nm'); marks.append(Plotting.labs_lins[0]); 
+            hv_data.append([data[0], data[1]]); labels.append('T = 101.86 nm'); marks.append(Plotting.labs_lins[0]); 
             hv_data.append([data[0], data[3]]); labels.append('2 T'); marks.append(Plotting.labs_lins[1]); 
             #hv_data.append([data[0], data[2]]); labels.append('3 T'); marks.append(Plotting.labs_lins[2]);
             #hv_data.append([data[0], data[4]]); labels.append('4 T'); marks.append(Plotting.labs_lins[3]);
@@ -145,14 +145,14 @@ def layer_AR():
         print(e)
 
 def layer_HR():
-    # make a plot of the computed dielectric layer AR coating reflection curve
+    # make a plot of the computed dielectric layer HR coating reflection curve
     # R. Sheehan 17 - 6 - 2020
 
     FUNC_NAME = ".layer_HR()" # use this in exception handling messages
     ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
 
     try:
-        filename = "HR_Coating.txt"
+        filename = "HR_Coating_15.txt"
         if glob.glob(filename):
             # import the dataset
             data = np.loadtxt(filename, delimiter = ',', unpack = True)
@@ -182,6 +182,46 @@ def layer_HR():
         print(ERR_STATEMENT)
         print(e)
 
+def layer_HR_2():
+    # make a plot of the computed dielectric layer HR reflection curves
+    # R. Sheehan 19 - 6 - 2020
+
+    FUNC_NAME = ".layer_HR()" # use this in exception handling messages
+    ERR_STATEMENT = "Error: " + MOD_NAME_STR + FUNC_NAME
+
+    try:
+        hv_data = []; labels = []; marks = [];
+
+        files = ["HR_Coating_7.txt","HR_Coating_11.txt","HR_Coating_15.txt"]
+
+        count = 7;
+        i=0
+        for f in files:
+            if glob.glob(f):
+                data = np.loadtxt(f, delimiter = ',', unpack = True)
+                hv_data.append([data[0], data[1]]); labels.append('Layers = %(v1)d'%{"v1":count}); marks.append(Plotting.labs_lins[i])
+            count = count + 4
+            i = i + 1 
+
+        # make the plot of the data set
+        args = Plotting.plot_arg_multiple()
+
+        args.loud = True
+        args.crv_lab_list = labels
+        args.mrk_list = marks
+        args.x_label = 'Wavelength nm'
+        args.y_label = 'Reflectivity'
+        args.plt_range = [data[0][0], data[0][-1], 0.0, 1.0]
+        args.fig_name = 'HR_Coating'
+
+        Plotting.plot_multiple_curves(hv_data, args)
+
+        del hv_data; del labels; del marks; 
+       
+    except Exception as e:
+        print(ERR_STATEMENT)
+        print(e)
+
 def main():
     pass
 
@@ -198,4 +238,4 @@ if __name__ == '__main__':
 
     #layer_AR()
 
-    layer_HR()
+    layer_HR_2()

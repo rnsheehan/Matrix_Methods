@@ -102,7 +102,7 @@ void test::layer_test()
 	double wavelength = 1550; // wavelength in nm
 	double thickness = 0.75*wavelength; // layer thickness in nm
 	double cladding_index = 1.0; // RI value at some wavelength
-	double layer_index = 3.48; // RI value at some wavelength
+	double layer_index = 3.45; // RI value at some wavelength
 	double substrate_index = 1.45; // RI value at some wavelength
 
 	fowles_layer l1; 
@@ -162,7 +162,7 @@ void test::AR_Coating()
 	// R. Sheehan 17 - 6 - 2020
 
 	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
-	double wavelength = 1550; // wavelength in nm
+	double wavelength = 550; // wavelength in nm
 	
 	double cladding_index = 1.0; // RI value at some wavelength
 	double layer_index = 1.35; // n1 ~ sqrt(n2) for AR coating
@@ -191,8 +191,8 @@ void test::AR_Coating()
 		fowles_layer l4; 
 		fowles_layer l5; 
 
-		wavelength = 750.0;
-		while (wavelength < 2500.0) {
+		wavelength = 400.0;
+		while (wavelength < 701.0) {
 			thickness = 1550.0 / (4.0 * layer_index); // layer thickness in nm
 
 			l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index);
@@ -219,7 +219,11 @@ void test::HR_Coating()
 
 	bool pol = TE; 
 	
-	int n_layer_pairs = 5; 
+	int n_layer_pairs = 14; // minimum value here should be 2
+	// min value of 2 means initial layer + 1 internal layer + substrate layer
+	// value of 4 means initial layer + 3 internal layer + substrate layer
+	// value of 6 means initial layer + 5 internal layer + substrate layer
+	// value of 8 means initial layer + 7 internal layer + substrate layer etc..
 
 	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
 	double lambda_0 = 550; // wavelength in nm
@@ -233,12 +237,16 @@ void test::HR_Coating()
 	double t_high = lambda_0 / (4.0 * high_index), t_low = lambda_0 / (4.0 * low_index);
 	//double t_high = lambda_0 / (4.0 * high_index), t_low = t_high;
 
+	std::cout << "Layer thicknesses\n";
+	std::cout << "High: " << t_high << "\n"; 
+	std::cout << "Low: " << t_low << "\n"; 
+
 	// sweep over all wavelengths
-	int n_wl = 400, size = 2;
-	double l1 = 300, l2 = 800, p_first, p_last; 
+	int n_wl = 600, size = 2;
+	double l1 = 250, l2 = 1000, p_first, p_last; 
 	sweep wavelengths(n_wl, l1, l2); 
 
-	std::string filename = "HR_Coating.txt";
+	std::string filename = "HR_Coating_" + template_funcs::toString(n_layer_pairs+1) + ".txt";
 	std::ofstream write; 
 
 	for (int i = 0; i < wavelengths.get_Nsteps(); i++) {
