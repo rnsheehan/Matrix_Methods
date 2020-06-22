@@ -309,8 +309,8 @@ def layer_BP_BW():
 
     try:
         # the data
-        x = [1, 2, 3, 4]
-        y = [151.70, 22.48, 3.86, 0.67]
+        x = [1, 2, 3, 4, 5]
+        y = [151.70, 22.48, 3.86, 0.67, 0.12]
                         
         # make the plot of the data set
         args = Plotting.plot_arg_single()
@@ -347,8 +347,8 @@ if __name__ == '__main__':
 
     #layer_HR_2()
 
-    layer_BP()
+    #layer_BP()
 
     #layer_BP_2()
 
-    #layer_BP_BW()
+    layer_BP_BW()
