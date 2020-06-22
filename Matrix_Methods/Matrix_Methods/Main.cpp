@@ -10,7 +10,9 @@ int main()
 
 	//test::AR_Coating(); 
 
-	test::HR_Coating(); 
+	//test::HR_Coating(); 
+
+	test::BP_Filter(); 
 
 	//test::AR_filter_test();
 

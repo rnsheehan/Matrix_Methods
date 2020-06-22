@@ -14,6 +14,8 @@ namespace test {
 
 	void HR_Coating(); 
 
+	void BP_Filter(); 
+
 	void AR_filter_test(); 
 
 	void high_low_test(); 

@@ -322,6 +322,110 @@ void test::HR_Coating()
 	}
 }
 
+void test::BP_Filter()
+{
+	// Use the Fowles / Born and Wolf matrix method to compute the transmission spectrum of a bandpass filter
+	// R. Sheehan 22 - 6 - 2020
+
+	bool pol = TE;
+
+	int n_layer_pairs = 3; // minimum value here should be 1
+
+	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
+	double lambda_0 = 1550; // wavelength in nm
+
+	double cladding_index = 1.0; // RI value at some wavelength
+	double high_index = 3.45;
+	double low_index = 1.45;
+	double substrate_index = 1.0; // RI value at some wavelength
+
+	// define the layer thicknesses lambda_0
+	double t_high = lambda_0 / (4.0 * high_index), t_low = lambda_0 / (4.0 * low_index), t_mid = lambda_0 / (2.0 * high_index);
+	//double t_high = lambda_0 / (4.0 * high_index), t_low = t_high;
+
+	std::cout << "Layer thicknesses\n";
+	std::cout << "High: " << t_high << "\n";
+	std::cout << "Low: " << t_low << "\n";
+	std::cout << "Mid: " << t_mid << "\n";
+
+	// sweep over all wavelengths
+	int n_wl = 2000, size = 2;
+	double l1 = 1450, l2 = 1650, p_first, p_last;
+	sweep wavelengths(n_wl, l1, l2);
+
+	std::string filename = "BP_Filter_" + template_funcs::toString(n_layer_pairs) + ".txt";
+	std::ofstream write;
+
+	for (int i = 0; i < wavelengths.get_Nsteps(); i++) {
+
+		double n0, n2, angle, R, T;
+
+		std::complex<double> r, t;
+
+		std::vector<std::vector<std::complex<double>>> M = vecut::zero_cmat(size, size);
+		std::vector<std::vector<std::complex<double>>> Mnow = vecut::zero_cmat(size, size);
+
+		// compute the transfer matrix for the high, middle and low RI layers
+		fowles_layer high;
+		fowles_layer low;
+
+		// first layer
+		low.set_params(pol, angle_in, t_low, wavelengths.get_val(i), cladding_index, low_index, high_index);
+		M = low.transfer_matrix(); 
+		p_first = low.get_p_in(); 
+
+		// top of stack
+		for (int j = 0; j < n_layer_pairs; j++) {
+			high.set_params(pol, low.get_theta_out(), t_high, wavelengths.get_val(i), low_index, high_index, low_index);
+			Mnow = high.transfer_matrix();
+			M = vecut::cmat_cmat_product(M, Mnow);
+
+			low.set_params(pol, high.get_theta_out(), t_low, wavelengths.get_val(i), high_index, low_index, high_index);
+			Mnow = low.transfer_matrix();
+			M = vecut::cmat_cmat_product(M, Mnow);
+		}		
+
+		// centre of stack
+		high.set_params(pol, low.get_theta_out(), t_mid, wavelengths.get_val(i), low_index, high_index, low_index);
+		Mnow = high.transfer_matrix();
+		M = vecut::cmat_cmat_product(M, Mnow);
+
+		// bottom of stack
+		for (int j = 0; j < n_layer_pairs; j++) {
+			low.set_params(pol, high.get_theta_out(), t_low, wavelengths.get_val(i), high_index, low_index, high_index);
+			Mnow = low.transfer_matrix();
+			M = vecut::cmat_cmat_product(M, Mnow);
+
+			high.set_params(pol, low.get_theta_out(), t_high, wavelengths.get_val(i), low_index, high_index, low_index);
+			Mnow = high.transfer_matrix();
+			M = vecut::cmat_cmat_product(M, Mnow);
+		}
+
+		// bottom layer
+		low.set_params(pol, high.get_theta_out(), t_low, wavelengths.get_val(i), high_index, low_index, substrate_index);
+		Mnow = low.transfer_matrix();
+		M = vecut::cmat_cmat_product(M, Mnow);	
+		p_last = low.get_p_out(); 
+
+		// M contains the product of all the transfer matrices
+		// Compute the reflection coeffs etc for this wavelength
+		spectrum::compute_r_t(p_first, p_last, M, r, t, R, T);
+
+		// output the computed data
+		if (i == 0) {
+			write.open(filename, std::ios_base::out, std::ios_base::trunc);
+		}
+		else {
+			write.open(filename, std::ios_base::app);
+		}
+
+		if (write.is_open()) {
+			write << wavelengths.get_val(i) << " , " << R << " , " << T << "\n";
+			write.close();
+		}
+	}
+}
+
 void test::AR_filter_test()
 {
 	// example calculation for computing reflectance of simple structure
