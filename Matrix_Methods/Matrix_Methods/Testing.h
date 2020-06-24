@@ -8,7 +8,9 @@ namespace test {
 
 	void matrix_test_2(); 
 
-	void layer_test();
+	void layer_test(bool pol, double angle_in);
+
+	void layer_test_alt(bool pol, double angle_in); // input angle in units of radians);
 
 	void AR_Coating();
 
@@ -16,19 +18,19 @@ namespace test {
 
 	void BP_Filter(); 
 
-	void AR_filter_test(); 
+	//void AR_filter_test(); 
 
-	void high_low_test(); 
+	//void high_low_test(); 
 
-	void r_t_test(); 
+	//void r_t_test(); 
 
-	void fp_test(); 
+	//void fp_test(); 
 
-	void ar_coating(); 
+	//void ar_coating(); 
 
-	void hr_coating(); 
+	//void hr_coating(); 
 
-	void fp_filter();
+	//void fp_filter();
 }
 
 #endif

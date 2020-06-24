@@ -9,11 +9,11 @@ fresnel::fresnel()
 	// Default constructor
 	params_defined = false; 
 
-	n1 = n2 = nrat = nrat_sqr = 0.0;
+	n1 = n2 = nrat = nrat_sqr = p_in = p_out = 0.0;
 
-	theta_in = theta_t = theta_critical = theta_brewster = zero;
+	theta_in = theta_t = theta_critical = theta_brewster = 0.0;
 
-	cos_theta_1 = cos_theta_2 = cos_ratio = zero; 
+	cos_theta_1 = cos_theta_2 = 0.0; 
 }
 
 fresnel::fresnel(double n_left, double n_right)
@@ -65,7 +65,7 @@ void fresnel::set_params(double n_left, double n_right)
 	}
 }
 
-void fresnel::set_angles(std::complex<double> angle)
+void fresnel::set_angles(double angle)
 {
 	// compute the transmission angle based on the assigned RI values
 
@@ -77,9 +77,11 @@ void fresnel::set_angles(std::complex<double> angle)
 			if (abs(angle) == 0.0) {
 				theta_in = angle;
 				
-				theta_t = zero; 
+				theta_t = 0.0; 
 
-				cos_theta_1 = cos_theta_2 = cos_ratio = 1.0;
+				cos_theta_1 = cos_theta_2 = 1.0;
+
+
 			}
 			else {
 				theta_in = angle; // angle of incidence
@@ -90,7 +92,6 @@ void fresnel::set_angles(std::complex<double> angle)
 
 				cos_theta_2 = cos(theta_t); // cosine of transmission angle
 
-				cos_ratio = abs(cos_theta_1) > 0.0 ? cos_theta_2 / cos_theta_1 : 1.0 ; 
 			}			
 		}
 		else {
@@ -106,7 +107,7 @@ void fresnel::set_angles(std::complex<double> angle)
 	}
 }
 
-std::complex<double> fresnel::reflection(bool polarisation, std::complex<double> angle)
+std::complex<double> fresnel::reflection(bool polarisation, double angle)
 {
 	// compute the reflection coefficient for a dielectric interface
 
@@ -120,10 +121,13 @@ std::complex<double> fresnel::reflection(bool polarisation, std::complex<double>
 			if (polarisation) { // TE reflection coefficient
 				t1 = n1 * cos_theta_1; 
 				t2 = n2 * cos_theta_2;
+				p_in = t1.real(); p_out = t2.real(); 
 			}
 			else { // TM reflection coefficient
 				t1 = n2 * cos_theta_1;
 				t2 = n1 * cos_theta_2;
+				p_in = cos_theta_1 / n1; 
+				p_out = cos_theta_2 / n2; 
 			}
 
 			numer = t1 - t2;
@@ -150,7 +154,7 @@ std::complex<double> fresnel::reflection(bool polarisation, std::complex<double>
 	}
 }
 
-std::complex<double> fresnel::transmission(bool polarisation, std::complex<double> angle)
+std::complex<double> fresnel::transmission(bool polarisation, double angle)
 {
 	// compute the transmission coefficient for a dielectric interface
 
@@ -161,15 +165,19 @@ std::complex<double> fresnel::transmission(bool polarisation, std::complex<doubl
 
 			std::complex<double> t1, numer, denom;
 
-			t1 = n1 * cos_theta_1; 
+			t1 = (n1 * cos_theta_1); 
 
 			numer = 2.0 * t1; 
 
 			if (polarisation) { // TE transmission coefficient
-				denom = t1 + n2 * cos_theta_2;
+				denom = t1 + (n2 * cos_theta_2);
+				p_in = n1 * cos_theta_1;
+				p_out = n2 * cos_theta_2;
 			}
 			else { // TM transmission coefficient
-				denom = n2 * cos_theta_1 + n1 * cos_theta_2;
+				denom = (n2 * cos_theta_1) + (n1 * cos_theta_2);
+				p_in = cos_theta_1 / n1;
+				p_out = cos_theta_2 / n2;
 			}
 
 			if (abs(denom) > 0.0) {
@@ -192,21 +200,22 @@ std::complex<double> fresnel::transmission(bool polarisation, std::complex<doubl
 	}
 }
 
-double fresnel::Reflectivity(bool polarisation, std::complex<double> angle)
+double fresnel::Reflectivity(bool polarisation, double angle)
 {
 	// Compute the Power Reflection Coefficient R = |r|^{2}
 
 	return template_funcs::DSQR( abs( reflection(polarisation, angle) ) ); 
 }
 
-double fresnel::Transmissivity(bool polarisation, std::complex<double> angle)
+double fresnel::Transmissivity(bool polarisation, double angle)
 {
-	// Compute the Power Transmission Coefficient T = (n_{2}/n_{1}) ( cos(phi) / cos(theta) ) |t|^{2}
+	// Compute the Power Transmission Coefficient T = (n_{2}/n_{1}) ( cos(phi) / cos(theta) ) |t|^{2}, TE
+	// Compute the Power Transmission Coefficient T = (n_{1}/n_{2}) ( cos(phi) / cos(theta) ) |t|^{2}, TM
 
-	return ( nrat * cos_ratio.real() * template_funcs::DSQR( abs( transmission(polarisation, angle) ) ) );
+	return ( (p_out / p_in) * template_funcs::DSQR( abs( transmission(polarisation, angle) ) ) );
 }
 
-void fresnel::compute_T(bool polarisation, double n_left, double n_right, std::complex<double> angle)
+void fresnel::compute_T(bool polarisation, double n_left, double n_right, double angle)
 {
 	// compute a dielectric interface transition matrix
 
@@ -262,16 +271,26 @@ propagation::propagation()
 
 propagation::propagation(double wavelength, double index, double thickness, std::complex<double> angle)
 {
-	set_params(wavelength, index, thickness, angle);
+	// Constructor
+
+	compute_P(wavelength, index, thickness, angle);
 }
 
 propagation::~propagation()
 {
+	// Deconstructor
+
 	P.clear(); params_defined = false; 
 }
 
-void propagation::set_params(double wavelength, double index, double thickness, std::complex<double> angle)
+void propagation::compute_P(double wavelength, double index, double thickness, std::complex<double> angle)
 {
+	// wavelength is the wavelength of the plane wave propagating in the dielectric layer
+	// index is the RI of the material in the dielectric layer
+	// thickness is the width of the material in the dielectric layer
+	// angle is the propagation angle of the plane wave propagating in the dielectric layer after it has transitioned 
+	// across the dielectric interface, angle corresponds to phi in Fowles' method
+
 	try {
 		bool c1 = wavelength > 0.0 ? true : false; 
 		bool c2 = index > 0.0 ? true : false;
@@ -284,7 +303,15 @@ void propagation::set_params(double wavelength, double index, double thickness, 
 			n = index; 
 			d = thickness; 
 			theta = angle; 
-			phase = eye * (Two_PI / wavelength) * n * d * cos(theta); 
+			// this phase term is equivalent to beta in the fowles_layer class
+			// beta = phase
+			phase = (Two_PI / wavelength) * n * d * cos(theta); 
+
+			int size = 2;
+
+			P = vecut::zero_cmat(size, size);
+
+			P[0][0] = exp(eye*phase); P[1][1] = exp(-1.0 * eye * phase);
 
 			params_defined = true; 
 		}
@@ -303,26 +330,9 @@ void propagation::set_params(double wavelength, double index, double thickness, 
 	}
 }
 
-void propagation::compute_P(double wavelength, double index, double thickness, std::complex<double> angle)
-{
-	try {
-		set_params(wavelength, index, thickness, angle);
-
-		int size = 2; 
-
-		P = vecut::zero_cmat(size, size); 
-
-		P[0][0] = exp(phase); P[1][1] = exp(-1.0*phase);
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
-
 std::vector<std::vector<std::complex<double>>> propagation::propagation_matrix()
 {
-	// return the transfer matrix of a given fowles_layer
+	// return the propagation matrix of a given layer
 
 	if (params_defined) {
 		return P;
@@ -411,216 +421,216 @@ double layer::get_RI(double wavelength)
 }
 
 // definitions for the multilayer class
-multilayer::multilayer()
-{
-	// Default Constructor
-}
+//multilayer::multilayer()
+//{
+//	// Default Constructor
+//}
 
-multilayer::multilayer(sweep &swp_obj, std::vector<layer> &layer_list)
-{
-	// Primary constructor
-	set_params(swp_obj, layer_list);
-}
+//multilayer::multilayer(sweep &swp_obj, std::vector<layer> &layer_list)
+//{
+//	// Primary constructor
+//	set_params(swp_obj, layer_list);
+//}
 
-multilayer::~multilayer()
-{
-	// Deconstructor
-	r.clear(); t.clear(); the_layers.clear(); 
-}
+//multilayer::~multilayer()
+//{
+//	// Deconstructor
+//	r.clear(); t.clear(); the_layers.clear(); 
+//}
 
-void multilayer::set_params(sweep &swp_obj, std::vector<layer> &layer_list)
-{
-	try {
-		bool c1 = swp_obj.defined();
-		bool c2 = !(layer_list.empty()) ? true : false;
-		bool c10 = c1 && c2; 
+//void multilayer::set_params(sweep &swp_obj, std::vector<layer> &layer_list)
+//{
+//	try {
+//		bool c1 = swp_obj.defined();
+//		bool c2 = !(layer_list.empty()) ? true : false;
+//		bool c10 = c1 && c2; 
+//
+//		if (c10) {
+//			wavelength = swp_obj; 
+//
+//			the_layers.assign(layer_list.begin(), layer_list.end()); 
+//
+//			//the_layers = layer_list; 
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multilayer::set_params(sweep &swp_obj, std::list<layer> &layer_list)\n";
+//			if (!c1) reason += "swp_obj is not correct\n";
+//			if (!c2) reason += "layer_list has not been correctly assigned";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
-		if (c10) {
-			wavelength = swp_obj; 
+//std::vector<std::vector<std::complex<double>>> multilayer::transmission_matrix(double &lambda, bool polarisation, bool loud)
+//{
+//	// Compute the structure transmission matrix at a given wavelength
+//	// Loop over all layers in the structure and return the computed transmission matrix for that structure
+//	// R. Sheehan 13 - 8 - 2019
+//
+//	try {
+//		if ( lambda > 0.0 && !the_layers.empty() ) {
+//			int size = 2; 
+//
+//			std::vector<std::vector<std::complex<double>>> M, Msub, T, P;  // array to store transfer matrix of overall structure
+//
+//			M = vecut::idn_cmat(size); 
+//
+//			Msub = vecut::zero_cmat(size, size); 
+//
+//			fresnel transition; 
+//
+//			propagation prop; 
+//
+//			// step through the layer list
+//			for (size_t i = 0; i < the_layers.size() - 1; i++) {
+//				
+//				// Compute the transmission matrix for a given wavelength				
+//				transition.compute_T(polarisation, the_layers[i].get_RI(lambda), the_layers[i + 1].get_RI(lambda), zero);
+//
+//				T = transition.transition_matrix(); 
+//
+//				if (i < the_layers.size() - 2) {
+//					// Compute the propagation matrix for a given wavelength
+//					prop.compute_P(lambda, the_layers[i + 1].get_RI(lambda), the_layers[i + 1].get_d(), zero);
+//					P = prop.propagation_matrix();
+//				}
+//				
+//				if (i == the_layers.size() - 2) {
+//					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "}\n";
+//					M = vecut::cmat_cmat_product(M, T);
+//				}
+//				else {
+//					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "} * P_{" << i + 1 << "}\n"; 
+//					Msub = vecut::cmat_cmat_product(T, P);
+//					M = vecut::cmat_cmat_product(M, Msub);
+//				}
+//			}
+//
+//			if (loud)std::cout << "\n"; 
+//
+//			return M; 
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: std::vector<std::vector<std::complex<double>>> multilayer::transmission_matrix(double &lambda)\n";
+//			if (lambda < 0.0) reason += "input wavelength value is not correct\n";
+//			if (the_layers.empty()) reason += "the_layers has not been correctly assigned";
+//			throw std::invalid_argument(reason);
+//		}	
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
-			the_layers.assign(layer_list.begin(), layer_list.end()); 
-
-			//the_layers = layer_list; 
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multilayer::set_params(sweep &swp_obj, std::list<layer> &layer_list)\n";
-			if (!c1) reason += "swp_obj is not correct\n";
-			if (!c2) reason += "layer_list has not been correctly assigned";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
-
-std::vector<std::vector<std::complex<double>>> multilayer::transmission_matrix(double &lambda, bool polarisation, bool loud)
-{
-	// Compute the structure transmission matrix at a given wavelength
-	// Loop over all layers in the structure and return the computed transmission matrix for that structure
-	// R. Sheehan 13 - 8 - 2019
-
-	try {
-		if ( lambda > 0.0 && !the_layers.empty() ) {
-			int size = 2; 
-
-			std::vector<std::vector<std::complex<double>>> M, Msub, T, P;  // array to store transfer matrix of overall structure
-
-			M = vecut::idn_cmat(size); 
-
-			Msub = vecut::zero_cmat(size, size); 
-
-			fresnel transition; 
-
-			propagation prop; 
-
-			// step through the layer list
-			for (size_t i = 0; i < the_layers.size() - 1; i++) {
-				
-				// Compute the transmission matrix for a given wavelength				
-				transition.compute_T(polarisation, the_layers[i].get_RI(lambda), the_layers[i + 1].get_RI(lambda), zero);
-
-				T = transition.transition_matrix(); 
-
-				if (i < the_layers.size() - 2) {
-					// Compute the propagation matrix for a given wavelength
-					prop.compute_P(lambda, the_layers[i + 1].get_RI(lambda), the_layers[i + 1].get_d(), zero);
-					P = prop.propagation_matrix();
-				}
-				
-				if (i == the_layers.size() - 2) {
-					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "}\n";
-					M = vecut::cmat_cmat_product(M, T);
-				}
-				else {
-					if (loud) std::cout << i << ": M * T_{" << i << " , " << i + 1 << "} * P_{" << i + 1 << "}\n"; 
-					Msub = vecut::cmat_cmat_product(T, P);
-					M = vecut::cmat_cmat_product(M, Msub);
-				}
-			}
-
-			if (loud)std::cout << "\n"; 
-
-			return M; 
-		}
-		else {
-			std::string reason;
-			reason = "Error: std::vector<std::vector<std::complex<double>>> multilayer::transmission_matrix(double &lambda)\n";
-			if (lambda < 0.0) reason += "input wavelength value is not correct\n";
-			if (the_layers.empty()) reason += "the_layers has not been correctly assigned";
-			throw std::invalid_argument(reason);
-		}	
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
-
-void multilayer::compute_spectrum(bool polarisation, bool loud)
-{
-	// Compute the reflection and transmission spectrum for a multilayer stack
-	
-	try {
-		if ( wavelength.defined() && !the_layers.empty() ) {
-		
-			double lambda; 
-			std::complex<double> r_coeff, t_coeff;
-			std::vector<std::vector<std::complex<double>>> M; 
-
-			std::string filename;
-			filename = "Multilayer_Spectral_Response.txt";
-			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-			if (loud) std::cout << "Results\n";
-
-			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
-				lambda = wavelength.get_val(i); 
-
-				M = transmission_matrix(lambda, polarisation); // wavelength dependent transmission matrix
-
-				r_coeff = M[0][1] / M[0][0]; // wavelength dependent reflection coefficient
-
-				t_coeff = 1.0 / M[0][0]; // wavelength dependent transmission coefficient
-
-				if (loud) std::cout << lambda << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-
-				write << lambda << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-				//write << lambda << " , " << template_funcs::DSQR(abs(r_coeff)) << " , " << template_funcs::DSQR(abs(t_coeff)) << "\n";
-			}	
-
-			write.close();
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multilayer::compute_spectrum(bool loud)\n";
-			if (!wavelength.defined()) reason += "swp_obj is not correct\n";
-			if (the_layers.empty()) reason += "the_layers has not been correctly assigned";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void multilayer::compute_spectrum(bool polarisation, bool loud)
+//{
+//	// Compute the reflection and transmission spectrum for a multilayer stack
+//	
+//	try {
+//		if ( wavelength.defined() && !the_layers.empty() ) {
+//		
+//			double lambda; 
+//			std::complex<double> r_coeff, t_coeff;
+//			std::vector<std::vector<std::complex<double>>> M; 
+//
+//			std::string filename;
+//			filename = "Multilayer_Spectral_Response.txt";
+//			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//			if (loud) std::cout << "Results\n";
+//
+//			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+//				lambda = wavelength.get_val(i); 
+//
+//				M = transmission_matrix(lambda, polarisation); // wavelength dependent transmission matrix
+//
+//				r_coeff = M[0][1] / M[0][0]; // wavelength dependent reflection coefficient
+//
+//				t_coeff = 1.0 / M[0][0]; // wavelength dependent transmission coefficient
+//
+//				if (loud) std::cout << lambda << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//
+//				write << lambda << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//				//write << lambda << " , " << template_funcs::DSQR(abs(r_coeff)) << " , " << template_funcs::DSQR(abs(t_coeff)) << "\n";
+//			}	
+//
+//			write.close();
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multilayer::compute_spectrum(bool loud)\n";
+//			if (!wavelength.defined()) reason += "swp_obj is not correct\n";
+//			if (the_layers.empty()) reason += "the_layers has not been correctly assigned";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 // definitions for the multilayer_old class
 
-multilayer_old::multilayer_old()
-{
-	layer_mat = nullptr; substrate = nullptr; cladding = nullptr;
-}
+//multilayer_old::multilayer_old()
+//{
+//	layer_mat = nullptr; substrate = nullptr; cladding = nullptr;
+//}
 
-multilayer_old::multilayer_old(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)
-{
-	set_params(swp_obj, the_fowles_layer, the_cladding, the_substrate);
-}
+//multilayer_old::multilayer_old(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)
+//{
+//	set_params(swp_obj, the_fowles_layer, the_cladding, the_substrate);
+//}
 
-multilayer_old::~multilayer_old()
-{
-	M.clear(); r.clear(); t.clear();
-}
+//multilayer_old::~multilayer_old()
+//{
+//	M.clear(); r.clear(); t.clear();
+//}
 
-void multilayer_old::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
-{
-	// assign the parameters that make up the fowles_layer structure
-
-	try {
-
-		bool c1 = swp_obj.defined();
-		bool c4 = the_layer != nullptr ? true : false;
-		bool c5 = the_cladding != nullptr ? true : false;
-		bool c6 = the_substrate != nullptr ? true : false;
-		bool c10 = c1 && c4 && c5 && c6;
-
-		if (c10) {
-			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
-
-			// assign the material objects
-			layer_mat = the_layer;
-			substrate = the_substrate;
-			cladding = the_cladding;
-
-			int size = 2;
-			M = vecut::zero_cmat(size, size);
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multilayer_old::set_params(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)\n";
-			if (!c1) reason += "swp_obj is not correct\n";
-			if (!c4) reason += "the_fowles_layer has not been correctly assigned";
-			if (!c5) reason += "the_cladding has not been correctly assigned";
-			if (!c6) reason += "the_substrate has not been correctly assigned";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void multilayer_old::set_params(sweep &swp_obj, material *the_layer, material *the_cladding, material *the_substrate)
+//{
+//	// assign the parameters that make up the fowles_layer structure
+//
+//	try {
+//
+//		bool c1 = swp_obj.defined();
+//		bool c4 = the_layer != nullptr ? true : false;
+//		bool c5 = the_cladding != nullptr ? true : false;
+//		bool c6 = the_substrate != nullptr ? true : false;
+//		bool c10 = c1 && c4 && c5 && c6;
+//
+//		if (c10) {
+//			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
+//
+//			// assign the material objects
+//			layer_mat = the_layer;
+//			substrate = the_substrate;
+//			cladding = the_cladding;
+//
+//			int size = 2;
+//			M = vecut::zero_cmat(size, size);
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multilayer_old::set_params(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)\n";
+//			if (!c1) reason += "swp_obj is not correct\n";
+//			if (!c4) reason += "the_fowles_layer has not been correctly assigned";
+//			if (!c5) reason += "the_cladding has not been correctly assigned";
+//			if (!c6) reason += "the_substrate has not been correctly assigned";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 //void multilayer_old::compute_r_t_Fowles(int n_fowles_layers, double layer_thickness, bool loud)
 //{
@@ -702,152 +712,152 @@ void multilayer_old::set_params(sweep &swp_obj, material *the_layer, material *t
 //	}
 //}
 
-void multilayer_old::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
-{
-	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
-	// R. Sheehan 15 - 7 - 2019
-
-	try {
-		bool c1 = n_fowles_layers > 0 ? true : false;
-		bool c2 = fowles_layer_thickness > 0 ? true : false;
-		bool c10 = c1 && c2 && wavelength.defined();
-
-		if (c10) {
-			// sweep over all wavelengths
-			double lambda, RI_fowles_layer, RI_clad, RI_sub;
-			std::complex<double> r_coeff, t_coeff;
-			std::string filename;
-			filename = "multifowles_layer_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
-			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
-			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
-
-				lambda = wavelength.get_val(i); // assign wavelength value
-
-				layer_mat->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
-
-				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
-
-				// compute wavelength dependent refractive index at this wavelength
-
-				RI_clad = cladding->refractive_index(); 
-
-				RI_fowles_layer = layer_mat->refractive_index(); 
-
-				RI_sub = substrate->refractive_index(); 
-
-				std::vector<std::vector<std::complex<double>>> Mnow; 
-
-				// compute the transition matrix at the cladding - fowles_layer interface
-				fresnel T12; 
-
-				T12.compute_T(TE, RI_clad, RI_fowles_layer, zero); 
-
-				M = T12.transition_matrix(); // M = T_{12}
-
-				// compute the propagation matrix for the fowles_layer
-				propagation P2; 
-
-				P2.compute_P(lambda, RI_fowles_layer, n_fowles_layers * fowles_layer_thickness, zero); 
-
-				Mnow = P2.propagation_matrix(); 
-
-				M = vecut::cmat_cmat_product(M, Mnow); // M = T_{12} * P_{2}
-
-				// compute the transition matrix at the fowles_layer-substrate interface
-				fresnel T23;
-
-				T23.compute_T(TE, RI_fowles_layer, RI_sub, T12.get_theta_t());
-
-				Mnow = T23.transition_matrix(); 
-
-				M = vecut::cmat_cmat_product(M, Mnow); // M = T_{12} * P_{2} * T_{23}
-
-				r_coeff = M[0][1] / M[0][0];
-
-				t_coeff = 1.0 / M[0][0]; 
-
-				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-
-				write << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-			}
-
-			write.close();
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multifowles_layer::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)\n";
-			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
-			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
-			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void multilayer_old::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
+//{
+//	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
+//	// R. Sheehan 15 - 7 - 2019
+//
+//	try {
+//		bool c1 = n_fowles_layers > 0 ? true : false;
+//		bool c2 = fowles_layer_thickness > 0 ? true : false;
+//		bool c10 = c1 && c2 && wavelength.defined();
+//
+//		if (c10) {
+//			// sweep over all wavelengths
+//			double lambda, RI_fowles_layer, RI_clad, RI_sub;
+//			std::complex<double> r_coeff, t_coeff;
+//			std::string filename;
+//			filename = "multifowles_layer_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
+//			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
+//			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+//
+//				lambda = wavelength.get_val(i); // assign wavelength value
+//
+//				layer_mat->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+//
+//				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+//
+//				// compute wavelength dependent refractive index at this wavelength
+//
+//				RI_clad = cladding->refractive_index(); 
+//
+//				RI_fowles_layer = layer_mat->refractive_index(); 
+//
+//				RI_sub = substrate->refractive_index(); 
+//
+//				std::vector<std::vector<std::complex<double>>> Mnow; 
+//
+//				// compute the transition matrix at the cladding - fowles_layer interface
+//				fresnel T12; 
+//
+//				T12.compute_T(TE, RI_clad, RI_fowles_layer, zero); 
+//
+//				M = T12.transition_matrix(); // M = T_{12}
+//
+//				// compute the propagation matrix for the fowles_layer
+//				propagation P2; 
+//
+//				P2.compute_P(lambda, RI_fowles_layer, n_fowles_layers * fowles_layer_thickness, zero); 
+//
+//				Mnow = P2.propagation_matrix(); 
+//
+//				M = vecut::cmat_cmat_product(M, Mnow); // M = T_{12} * P_{2}
+//
+//				// compute the transition matrix at the fowles_layer-substrate interface
+//				fresnel T23;
+//
+//				T23.compute_T(TE, RI_fowles_layer, RI_sub, T12.get_theta_t());
+//
+//				Mnow = T23.transition_matrix(); 
+//
+//				M = vecut::cmat_cmat_product(M, Mnow); // M = T_{12} * P_{2} * T_{23}
+//
+//				r_coeff = M[0][1] / M[0][0];
+//
+//				t_coeff = 1.0 / M[0][0]; 
+//
+//				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//
+//				write << lambda << " , " << RI_clad << " , " << RI_fowles_layer << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//			}
+//
+//			write.close();
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multifowles_layer::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)\n";
+//			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
+//			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
+//			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 // definitions for the HL_stack class
 
-HL_stack::HL_stack()
-{
-	layer_high = nullptr; layer_low = nullptr; substrate = nullptr; cladding = nullptr;
-}
+//HL_stack::HL_stack()
+//{
+//	layer_high = nullptr; layer_low = nullptr; substrate = nullptr; cladding = nullptr;
+//}
 
-HL_stack::HL_stack(sweep &swp_obj, material *h_fowles_layer, material *l_fowles_layer, material *the_cladding, material *the_substrate)
-{
-	set_params(swp_obj, h_fowles_layer, l_fowles_layer, the_cladding, the_substrate);
-}
+//HL_stack::HL_stack(sweep &swp_obj, material *h_fowles_layer, material *l_fowles_layer, material *the_cladding, material *the_substrate)
+//{
+//	set_params(swp_obj, h_fowles_layer, l_fowles_layer, the_cladding, the_substrate);
+//}
 
-HL_stack::~HL_stack()
-{
-	M.clear(); r.clear(); t.clear();
-}
+//HL_stack::~HL_stack()
+//{
+//	M.clear(); r.clear(); t.clear();
+//}
 
-void HL_stack::set_params(sweep &swp_obj, material *h_fowles_layer, material *l_fowles_layer, material *the_cladding, material *the_substrate)
-{
-	// assign the parameters that make up the fowles_layer structure
-
-	try {
-
-		bool c1 = swp_obj.defined();
-		bool c2 = h_fowles_layer != nullptr ? true : false;
-		bool c4 = l_fowles_layer != nullptr ? true : false;
-		bool c5 = the_cladding != nullptr ? true : false;
-		bool c6 = the_substrate != nullptr ? true : false;
-		bool c10 = c1 && c2 && c4 && c5 && c6;
-
-		if (c10) {
-			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
-
-										  // assign the material objects
-			layer_high = h_fowles_layer;
-			layer_low = l_fowles_layer;
-			substrate = the_substrate;
-			cladding = the_cladding;
-
-			int size = 2;
-			M = vecut::zero_cmat(size, size);
-		}
-		else {
-			std::string reason;
-			reason = "Error: void multifowles_layer::set_params(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)\n";
-			if (!c1) reason += "swp_obj is not correct\n";
-			if (!c4) reason += "the_fowles_layer has not been correctly assigned";
-			if (!c5) reason += "the_cladding has not been correctly assigned";
-			if (!c6) reason += "the_substrate has not been correctly assigned";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void HL_stack::set_params(sweep &swp_obj, material *h_fowles_layer, material *l_fowles_layer, material *the_cladding, material *the_substrate)
+//{
+//	// assign the parameters that make up the fowles_layer structure
+//
+//	try {
+//
+//		bool c1 = swp_obj.defined();
+//		bool c2 = h_fowles_layer != nullptr ? true : false;
+//		bool c4 = l_fowles_layer != nullptr ? true : false;
+//		bool c5 = the_cladding != nullptr ? true : false;
+//		bool c6 = the_substrate != nullptr ? true : false;
+//		bool c10 = c1 && c2 && c4 && c5 && c6;
+//
+//		if (c10) {
+//			wavelength.set_vals(swp_obj); // assign the values for the wavelength parameter space
+//
+//										  // assign the material objects
+//			layer_high = h_fowles_layer;
+//			layer_low = l_fowles_layer;
+//			substrate = the_substrate;
+//			cladding = the_cladding;
+//
+//			int size = 2;
+//			M = vecut::zero_cmat(size, size);
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void multifowles_layer::set_params(sweep &swp_obj, material *the_fowles_layer, material *the_cladding, material *the_substrate)\n";
+//			if (!c1) reason += "swp_obj is not correct\n";
+//			if (!c4) reason += "the_fowles_layer has not been correctly assigned";
+//			if (!c5) reason += "the_cladding has not been correctly assigned";
+//			if (!c6) reason += "the_substrate has not been correctly assigned";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 
 //void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness, bool loud)
 //{
@@ -944,107 +954,107 @@ void HL_stack::set_params(sweep &swp_obj, material *h_fowles_layer, material *l_
 //	}
 //}
 
-void HL_stack::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
-{
-	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
-	// R. Sheehan 15 - 7 - 2019
-
-	try {
-		bool c1 = n_fowles_layers > 0 ? true : false;
-		bool c2 = fowles_layer_thickness > 0 ? true : false;
-		bool c10 = c1 && c2 && wavelength.defined();
-
-		if (c10) {
-			// sweep over all wavelengths
-			int total_fowles_layers = 2 * n_fowles_layers;
-			double lambda, RI_h, RI_l, RI_clad, RI_sub;
-			std::complex<double> r_coeff, t_coeff;
-			std::string filename;
-			filename = "HL_stack_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
-			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
-			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
-
-				lambda = wavelength.get_val(i); // assign wavelength value
-
-				layer_high->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				layer_low->set_wavelength(lambda); // assign wavelength to fowles_layer material object
-
-				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
-
-				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
-
-				RI_h = layer_high->refractive_index(); // compute wavelength dependent refractive index at this wavelength
-
-				RI_l = layer_low->refractive_index(); // compute wavelength dependent refractive index at this wavelength
-
-				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
-
-				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
-
-				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
-				fresnel T12, T_hl, T_lh; 
-
-				T12.compute_T(TE, RI_clad, RI_h, zero); 
-
-				T_hl.compute_T(TE, RI_h, RI_l, T12.get_theta_t()); 
-
-				T_lh.compute_T(TE, RI_l, RI_h, T_hl.get_theta_t()); 
-
-				propagation P_h, P_l; 
-
-				P_h.compute_P(lambda, RI_h, fowles_layer_thickness, T12.get_theta_t()); 
-
-				P_l.compute_P(lambda, RI_l, fowles_layer_thickness, T12.get_theta_t()); 
-
-				std::vector<std::vector<std::complex<double>>> Mnow;
-
-				// get transfer matrix for all fowles_layers
-				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
-
-				M = T12.transition_matrix(); 
-
-				for (int j = 0; j < total_fowles_layers; j++) {
-					if (j % 2 == 0) {
-						Mnow = P_h.propagation_matrix(); 
-						M = vecut::cmat_cmat_product(M, Mnow); 
-						Mnow = T_hl.transition_matrix(); 
-						M = vecut::cmat_cmat_product(M, Mnow);
-					}
-					else {
-						Mnow = P_l.propagation_matrix(); 
-						M = vecut::cmat_cmat_product(M, Mnow);
-						Mnow = T_lh.transition_matrix();
-						M = vecut::cmat_cmat_product(M, Mnow);
-					}					
-				}
-
-				// compute reflectance and transmittance of the structure at this wavelength
-				
-				r_coeff = M[0][1] / M[0][0];
-
-				t_coeff = 1.0 / M[0][0];
-
-				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-
-				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
-			}
-
-			write.close();
-		}
-		else {
-			std::string reason;
-			reason = "Error: void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness)\n";
-			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
-			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
-			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
-			throw std::invalid_argument(reason);
-		}
-	}
-	catch (std::invalid_argument &e) {
-		useful_funcs::exit_failure_output(e.what());
-		exit(EXIT_FAILURE);
-	}
-}
+//void HL_stack::compute_r_t(int n_fowles_layers, double fowles_layer_thickness, bool loud)
+//{
+//	// Compute the transfer matrix for a system with n_fowles_layers each having the same thickness
+//	// R. Sheehan 15 - 7 - 2019
+//
+//	try {
+//		bool c1 = n_fowles_layers > 0 ? true : false;
+//		bool c2 = fowles_layer_thickness > 0 ? true : false;
+//		bool c10 = c1 && c2 && wavelength.defined();
+//
+//		if (c10) {
+//			// sweep over all wavelengths
+//			int total_fowles_layers = 2 * n_fowles_layers;
+//			double lambda, RI_h, RI_l, RI_clad, RI_sub;
+//			std::complex<double> r_coeff, t_coeff;
+//			std::string filename;
+//			filename = "HL_stack_Data_" + template_funcs::toString(n_fowles_layers) + "_fowles_layers_" + template_funcs::toString(fowles_layer_thickness, 2) + "_fowles_layer_Thickness.txt";
+//			std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//			if (loud) std::cout << "Results " + template_funcs::toString(n_fowles_layers) + " fowles_layers,  fowles_layer thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " um\n";
+//			for (int i = 0; i < wavelength.get_Nsteps(); i++) {
+//
+//				lambda = wavelength.get_val(i); // assign wavelength value
+//
+//				layer_high->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				layer_low->set_wavelength(lambda); // assign wavelength to fowles_layer material object
+//
+//				cladding->set_wavelength(lambda); // assign wavelength to cladding material object
+//
+//				substrate->set_wavelength(lambda); // assign wavelength to substrate material object
+//
+//				RI_h = layer_high->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+//
+//				RI_l = layer_low->refractive_index(); // compute wavelength dependent refractive index at this wavelength
+//
+//				RI_clad = cladding->refractive_index(); // equivalent to n_{0} in formulae
+//
+//				RI_sub = substrate->refractive_index(); // equivalent to n_{t} in formulae
+//
+//				// since this is an anti-reflection film the same matrix is used for all fowles_layers for fixed wavelength
+//				fresnel T12, T_hl, T_lh; 
+//
+//				T12.compute_T(TE, RI_clad, RI_h, zero); 
+//
+//				T_hl.compute_T(TE, RI_h, RI_l, T12.get_theta_t()); 
+//
+//				T_lh.compute_T(TE, RI_l, RI_h, T_hl.get_theta_t()); 
+//
+//				propagation P_h, P_l; 
+//
+//				P_h.compute_P(lambda, RI_h, fowles_layer_thickness, T12.get_theta_t()); 
+//
+//				P_l.compute_P(lambda, RI_l, fowles_layer_thickness, T12.get_theta_t()); 
+//
+//				std::vector<std::vector<std::complex<double>>> Mnow;
+//
+//				// get transfer matrix for all fowles_layers
+//				// for the anti-reflection filter multiply the single fowles_layer TM by itself n_fowles_layers times
+//
+//				M = T12.transition_matrix(); 
+//
+//				for (int j = 0; j < total_fowles_layers; j++) {
+//					if (j % 2 == 0) {
+//						Mnow = P_h.propagation_matrix(); 
+//						M = vecut::cmat_cmat_product(M, Mnow); 
+//						Mnow = T_hl.transition_matrix(); 
+//						M = vecut::cmat_cmat_product(M, Mnow);
+//					}
+//					else {
+//						Mnow = P_l.propagation_matrix(); 
+//						M = vecut::cmat_cmat_product(M, Mnow);
+//						Mnow = T_lh.transition_matrix();
+//						M = vecut::cmat_cmat_product(M, Mnow);
+//					}					
+//				}
+//
+//				// compute reflectance and transmittance of the structure at this wavelength
+//				
+//				r_coeff = M[0][1] / M[0][0];
+//
+//				t_coeff = 1.0 / M[0][0];
+//
+//				if (loud) std::cout << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//
+//				write << lambda << " , " << RI_clad << " , " << RI_h << " , " << RI_l << " , " << RI_sub << " , " << abs(r_coeff) << " , " << abs(t_coeff) << "\n";
+//			}
+//
+//			write.close();
+//		}
+//		else {
+//			std::string reason;
+//			reason = "Error: void HL_stack::compute_r_t_Fowles(int n_fowles_layers, double fowles_layer_thickness)\n";
+//			if (!c1) reason += "n_fowles_layers: " + template_funcs::toString(n_fowles_layers) + " is not valid\n";
+//			if (!c2) reason += "fowles_layer_thickness: " + template_funcs::toString(fowles_layer_thickness, 2) + " is not valid\n";
+//			if (!wavelength.defined()) reason += "wavelength sweep object not defined correctly\n";
+//			throw std::invalid_argument(reason);
+//		}
+//	}
+//	catch (std::invalid_argument &e) {
+//		useful_funcs::exit_failure_output(e.what());
+//		exit(EXIT_FAILURE);
+//	}
+//}
 

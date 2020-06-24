@@ -93,12 +93,12 @@ void test::matrix_test_2()
 	vecut::print_to_screen(M3); 
 }
 
-void test::layer_test()
+void test::layer_test(bool pol, double angle_in)
 {
 	// see if the layer class is working correctly
 	// R. Sheehan 15 - 7 - 2019
 
-	double angle_in = (20.0)* DEG_TO_RAD; // input angle in units of radians
+	//double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
 	double wavelength = 1550; // wavelength in nm
 	double thickness = 0.75*wavelength; // layer thickness in nm
 	double cladding_index = 1.0; // RI value at some wavelength
@@ -108,52 +108,123 @@ void test::layer_test()
 	fowles_layer l1; 
 	fowles_layer l2; 
 
-	l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+	l1.set_params(pol, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, false); 
 
 	// test the alternative R calculator
-	double p0 = l1.get_p_in(), p2 = l1.get_p_out(), R, T;
+	double p0 = l1.get_p_in(), p1 = l1.get_p_layer(), p2 = l1.get_p_out(), R, T; 
 	std::complex<double> r, t; 
 	std::vector<std::vector<std::complex<double>>> M = l1.transfer_matrix(); 
 	spectrum::compute_r_t(p0, p2, M, r, t, R, T); 
 
 	std::cout << "R calc test\n";
+	std::cout << "polarisation: " << pol << "\n";
+	std::cout << "incidence angle: " << angle_in * RAD_TO_DEG << "\n";
+	std::cout << "layer angle: " << l1.get_theta_layer() * RAD_TO_DEG << "\n";
+	std::cout << "output angle: " << l1.get_theta_out() * RAD_TO_DEG << "\n";
+	std::cout << "p0: " << p0 << "\n"; 
+	std::cout << "p1: " << p1 << "\n"; 
+	std::cout << "p2: " << p2 << "\n"; 
+	std::cout << "p2 / p0: " << p2 / p0 << "\n";
 	std::cout << "r: " << r << "\n"; 
-	std::cout << "t: " << r << "\n"; 
-	std::cout << "R: " << R << "\n"; 
+	std::cout << "|r|: " << abs(r) << "\n";
+	std::cout << "arg(r): " << arg(r) << "\n";
+	std::cout << "t: " << t << "\n"; 
+	std::cout << "|t|: " << abs(t) << "\n";
+	std::cout << "arg(t): " << arg(t) << "\n";
+	std::cout << "R: " << R << "\n"; 	
 	std::cout << "T: " << T << "\n"; 
+	std::cout << "1 - R: " << 1.0 - R << "\n";
 	std::cout << "R + T: " << R + T << "\n\n"; 
 
-	l1.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index, true); 
+	bool run_calc = false; 
 
-	p0 = l1.get_p_in(), p2 = l1.get_p_out();
-	M = l1.transfer_matrix();
-	spectrum::compute_r_t(p0, p2, M, r, t, R, T);
+	if (run_calc) {
+		// loop over the layer length and output the reflectivity
+		std::string filename = "Air_Silicon_Silica_R_T.txt";
+		//std::string filename = "Air_Silica_Silicon_R_T.txt";
 
-	std::cout << "R calc test\n";
-	std::cout << "r: " << r << "\n";
-	std::cout << "t: " << r << "\n";
-	std::cout << "R: " << R << "\n";
-	std::cout << "T: " << T << "\n";
-	std::cout << "R + T: " << R + T << "\n\n";
+		std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
 
-	// loop over the layer length and output the reflectivity
-	std::string filename = "Air_Silicon_Silica_R_T.txt"; 
-	//std::string filename = "Air_Silica_Silicon_R_T.txt";
-	
-	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+		if (write.is_open()) {
+			angle_in = (20.0) * DEG_TO_RAD; // input angle in units of radians
 
-	if (write.is_open()) {
-		angle_in = (20.0) * DEG_TO_RAD; // input angle in units of radians
-		
-		thickness = 1000.0; 
-		while (thickness < 2000.0) {
-			l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index); 
-			l2.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index); 
-			write << thickness << " , " << l1.get_R() << " , " << l1.get_T() << " , " << l2.get_R() << " , " << l2.get_T() << "\n";
-			thickness += 1.0; 
+			thickness = 1000.0;
+			while (thickness < 2000.0) {
+				l1.set_params(TE, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index);
+				l2.set_params(TM, angle_in, thickness, wavelength, cladding_index, layer_index, substrate_index);
+				write << thickness << " , " << l1.get_R() << " , " << l1.get_T() << " , " << l2.get_R() << " , " << l2.get_T() << "\n";
+				thickness += 1.0;
+			}
+			write.close();
 		}
-		write.close(); 
 	}
+}
+
+void test::layer_test_alt(bool pol, double angle_in)
+{
+	// Confirm the operation of the 2*2 matrix method from Yariv
+	// Run the same calculation that you did for the Fowles' method test
+	// The results from this calculation should be the same as before, assuming the same parameters
+	// R. Sheehan 24 - 6 - 2020
+
+	//double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
+	double wavelength = 1550; // wavelength in nm
+	double thickness = 0.75 * wavelength; // layer thickness in nm
+	double cladding_index = 1.0; // RI value at some wavelength
+	double layer_index = 3.45; // RI value at some wavelength
+	double substrate_index = 1.45; // RI value at some wavelength
+	double R, T, p0, p1, p2; 
+	
+	std::complex<double> r, t; 
+	std::vector<std::vector<std::complex<double>>> M; 
+	std::vector<std::vector<std::complex<double>>> Mnow; 
+
+	fresnel iface1; 
+	propagation travel; 
+	fresnel iface2; 
+
+	// first interface cladding -> layer
+	iface1.compute_T(pol, cladding_index, layer_index, angle_in); 
+	p0 = iface1.get_p_in(); 
+	p1 = iface1.get_p_out(); 
+	M = iface1.transition_matrix(); 
+	
+	// travel across layer
+	travel.compute_P(wavelength, layer_index, thickness, iface1.get_theta_t()); 
+	Mnow = travel.propagation_matrix(); 
+	M = vecut::cmat_cmat_product(M, Mnow); 
+	
+	// second interface layer -> substrate
+	iface2.compute_T(pol, layer_index, substrate_index, iface1.get_theta_t()); 
+	p2 = iface2.get_p_out(); 
+	Mnow = iface2.transition_matrix(); 
+	M = vecut::cmat_cmat_product(M, Mnow); // transfer matrix for whole structure
+
+	// compute reflection, transmission based on elements of accumulated transfer matrix
+	r = M[1][0] / M[0][0]; t = 1.0 / M[0][0]; 
+	R = template_funcs::DSQR(abs(r)); 
+	T = (p2/p0)*template_funcs::DSQR(abs(t));
+
+	// Display results
+	std::cout << "R calc test alt\n";
+	std::cout << "polarisation: " << pol << "\n"; 
+	std::cout << "incidence angle: " << angle_in*RAD_TO_DEG << "\n"; 
+	std::cout << "layer angle: " << iface1.get_theta_t()*RAD_TO_DEG << "\n"; 
+	std::cout << "output angle: " << iface2.get_theta_t() * RAD_TO_DEG << "\n";
+	std::cout << "p0: " << p0 << "\n";
+	std::cout << "p1: " << p1 << "\n";
+	std::cout << "p2: " << p2 << "\n";
+	std::cout << "p2 / p0: " << p2 / p0 << "\n";
+	std::cout << "r: " << r << "\n";
+	std::cout << "|r|: " << abs(r) << "\n";
+	std::cout << "arg(r): " << arg(r) << "\n";
+	std::cout << "t: " << t << "\n"; // only valid for TE case
+	std::cout << "|t|: " << abs(t) << "\n";
+	std::cout << "arg(t): " << arg(t) << "\n";
+	std::cout << "R: " << R << "\n"; 
+	std::cout << "T: " << T << "\n"; // only valid for TE case, otherwise use T = 1 - R
+	std::cout << "1 - R: " << 1.0 - R << "\n"; 
+	std::cout << "R + T: " << R + T << "\n\n";
 }
 
 void test::AR_Coating()
@@ -426,317 +497,317 @@ void test::BP_Filter()
 	}
 }
 
-void test::AR_filter_test()
-{
-	// example calculation for computing reflectance of simple structure
-	// for this choice of materials and layer thicknesses you are designing an anti-reflection filter
-	// RI_{SiN} ~ 2, RI_{Si02} ~ 1.4 ~ \sqrt{2} for \lambda = 1.55 um
-
-	int n_pts, n_layers;
-	double start, stop, W;
-
-	sweep WL;
-	
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-
-	n_pts = 21; start = 1.52; stop = 1.59;
-	WL.set_vals(n_pts, start, stop);
-
-	multilayer_old calc;
-
-	calc.set_params(WL, &ri_sin, &ri_air, &ri_sio2); 
-
-	n_layers = 5; W = 1.55 / 4.0; 
-	calc.compute_r_t(n_layers, W, true);
-}
-
-void test::high_low_test()
-{
-	// example calculation for computing reflectance of an alternating structure
-	// R. Sheehan 23 - 7 - 2019
-
-	int n_pts, n_layers;
-	double start, stop, W;
-
-	sweep WL;
-
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-	Si ri_si; 
-
-	n_pts = 201; start = 1.52; stop = 1.59;
-	WL.set_vals(n_pts, start, stop);
-
-	HL_stack calc;
-
-	calc.set_params(WL, &ri_sin, &ri_sio2, &ri_air, &ri_si);
-
-	n_layers = 15; W = 1.55 / 4.0;
-	calc.compute_r_t(n_layers, W);
-}
-
-void test::r_t_test()
-{
-	// compute the transmisson and reflection coefficients for a dielectric interface
-	// R. Sheehan 31 - 7 - 2019
-
-	bool pol = TE; 
-
-	double n_in, n_out, angle; 
-
-	// Need to add conservation of energy confirmation
-
-	std::string filename = "Air_to_Glass_R_T.txt"; 
-	n_out = 1.5; n_in = 1.0; angle = PI_6;
-
-	/*std::string filename = "Glass_to_Air_R_T.txt";
-	n_out = 1.0; n_in = 1.5; angle = PI_6;*/
-
-	fresnel iface; 
-
-	iface.set_params(n_in, n_out); 
-
-	std::complex<double> r = iface.reflection(pol, angle); 
-	std::complex<double> t = iface.transmission(pol, angle); 
-
-	std::cout << "r: " << r << "\n";
-	std::cout << "t: " << t << "\n";
-	std::cout << "TE Amplitude Relation t - r: " << t - r << "\n"; // this should be unity
-	std::cout << "TM Amplitude Relation (n_{2}/n_{1})t - r: " << (iface.get_n_ratio()*t) - r << "\n"; // this should be unity
-	std::cout << "Power Reflection Coefficient R: " << iface.Reflectivity(pol, angle) << "\n"; 
-	std::cout << "Power Transmission Coefficient T: " << iface.Transmissivity(pol, angle) << "\n";
-	std::cout << "Conservation of Energy R + T: " << iface.Reflectivity(pol, angle) + iface.Transmissivity(pol, angle) << "\n"; 
-
-	// output the air-glass coefficients
-	
-	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
-
-	if (write.is_open()) {
-		
-		write << "n1, " << n_in << ", n2, " << n_out << ", n1 / n2, " << n_in / n_out << "\n"; 
-		write << "Critical Angle (rad), " << iface.get_theta_critical().real() << " , " << iface.get_theta_critical().imag() << "\n"; 
-		write << "Brewster Angle (rad), " << iface.get_theta_brewster().real() << " , " << iface.get_theta_brewster().imag() << "\n";
-		write << "angle (rad), r_{TE}, t_{TE}, r_{TM}, t_{TM}\n"; 
-
-		int n_angle; 
-		double d_angle, angle_min, angle_max;
-		//double v1, v2, v3, v4;
-		std::complex<double> v1, v2, v3, v4;
-
-		n_angle = 201; 
-		angle_min = 0.0; angle_max = PI_2; 
-		d_angle = (angle_max - angle_min) / ( static_cast<double>(n_angle - 1) ); 
-
-		angle = angle_min; 
-		while (angle < angle_max + d_angle) {
-			
-			// compute and output reflection and transmission coefficients
-			v1 = iface.reflection(TE, angle); 
-			v2 = iface.transmission(TE, angle); 
-			v3 = iface.reflection(TM, angle); 
-			v4 = iface.transmission(TM, angle); 
-
-			write << angle << " , " << v1.imag() << " , " << v2.imag() << " , " << v3.imag() << " , " << v4.imag() << "\n"; 
-
-			// compute and output power reflection and power transmision coefficients
-			/*v1 = iface.Reflectivity(TE, angle);
-			v2 = iface.Transmissivity(TE, angle);
-			v3 = iface.Reflectivity(TM, angle);
-			v4 = iface.Transmissivity(TM, angle);
-
-			write << angle << " , " << v1 << " , " << v2 << " , " << v3 << " , " << v4 << "\n";*/ 
-
-			angle += d_angle; 
-		}
-
-
-		write.close(); 
-	}
-}
-
-void test::fp_test()
-{
-	// Use the multilayer structure to compute the R, T spectrum of a FP cavity
-	// R. Sheehan 13 - 8 - 2019
-
-	int n_pts;
-	double start, stop, W = 0.0;
-
-	// Declarate the objects
-	sweep WL;
-
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-	Si ri_si;
-
-	// Fill the parameter space
-	n_pts = 5; start = 1.2; stop = 1.6;
-	WL.set_vals(n_pts, start, stop);
-
-	// Create layer stack
-	std::vector<layer> the_layers; 
-
-	W = 0.0; the_layers.push_back( layer(W, &ri_air) ); 
-	W = 2; the_layers.push_back( layer(W, &ri_si) );
-	W = 0.0; the_layers.push_back( layer(W, &ri_sio2) );
-
-	// Compute the r, t spectra
-	multilayer compute; 
-
-	compute.set_params(WL, the_layers); 
-
-	compute.compute_spectrum(TE, true); 
-}
-
-void test::ar_coating()
-{
-	// compute the spectrum of ar stack
-	// SiN layers on SiO2 layers on Si substrate
-
-	int n_pts;
-	double start, stop, W = 0.0, Wt = 0.25*1.55;
-
-	// Declarate the objects
-	sweep WL;
-
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-	Si ri_si;
-
-	// Fill the parameter space
-	n_pts = 51; start = 1.52; stop = 1.59;
-	WL.set_vals(n_pts, start, stop);
-
-	// Create layer stack
-	std::vector<layer> the_layers;
-
-	the_layers.push_back(layer(W, &ri_air));
-	Wt *= 9;  the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(W, &ri_sin));
-
-	// Compute the r, t spectra
-	multilayer compute;
-
-	compute.set_params(WL, the_layers);
-
-	compute.compute_spectrum(TE, true);
-}
-
-void test::hr_coating()
-{
-	// compute the spectrum of hr stack
-	// SiN layers on SiO2 layers on Si substrate
-
-	int n_pts;
-	double start, stop, W = 0.0, Wt = 1.55/4.0;
-
-	// Declarate the objects
-	sweep WL;
-
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-	Si ri_si;
-
-	// Fill the parameter space
-	n_pts = 201; start = 1.0; stop = 1.6;
-	WL.set_vals(n_pts, start, stop);
-
-	// Create layer stack
-	std::vector<layer> the_layers;
-
-	the_layers.push_back(layer(W, &ri_air));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_si));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(W, &ri_air));
-
-	// Compute the r, t spectra
-	multilayer compute;
-
-	compute.set_params(WL, the_layers);
-
-	compute.compute_spectrum(TE, true);
-}
-
-void test::fp_filter()
-{
-	// compute the spectrum of hr stack
-	// SiN layers on SiO2 layers on Si substrate
-
-	int n_pts;
-	double start, stop, W = 0.0, Wt = 0.25*1.55;
-
-	// Declarate the objects
-	sweep WL;
-
-	Air ri_air;
-	SiN ri_sin;
-	SiO2 ri_sio2;
-	Si ri_si;
-
-	// Fill the parameter space
-	n_pts = 101; start = 1.2; stop = 1.6;
-	WL.set_vals(n_pts, start, stop);
-
-	// Create layer stack
-	std::vector<layer> the_layers;
-
-	the_layers.push_back(layer(W, &ri_air));
-
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_sin));
-
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_sin));
-	
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_sin));
-	
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_sin));
-
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-
-	the_layers.push_back(layer(Wt, &ri_sin));
-	the_layers.push_back(layer(Wt, &ri_sio2));
-	
-	the_layers.push_back(layer(W, &ri_si));
-
-	// Compute the r, t spectra
-	multilayer compute;
-
-	compute.set_params(WL, the_layers);
-
-	compute.compute_spectrum(TE, true);
-}
+//void test::AR_filter_test()
+//{
+//	// example calculation for computing reflectance of simple structure
+//	// for this choice of materials and layer thicknesses you are designing an anti-reflection filter
+//	// RI_{SiN} ~ 2, RI_{Si02} ~ 1.4 ~ \sqrt{2} for \lambda = 1.55 um
+//
+//	int n_pts, n_layers;
+//	double start, stop, W;
+//
+//	sweep WL;
+//	
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//
+//	n_pts = 21; start = 1.52; stop = 1.59;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	multilayer_old calc;
+//
+//	calc.set_params(WL, &ri_sin, &ri_air, &ri_sio2); 
+//
+//	n_layers = 5; W = 1.55 / 4.0; 
+//	calc.compute_r_t(n_layers, W, true);
+//}
+
+//void test::high_low_test()
+//{
+//	// example calculation for computing reflectance of an alternating structure
+//	// R. Sheehan 23 - 7 - 2019
+//
+//	int n_pts, n_layers;
+//	double start, stop, W;
+//
+//	sweep WL;
+//
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//	Si ri_si; 
+//
+//	n_pts = 201; start = 1.52; stop = 1.59;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	HL_stack calc;
+//
+//	calc.set_params(WL, &ri_sin, &ri_sio2, &ri_air, &ri_si);
+//
+//	n_layers = 15; W = 1.55 / 4.0;
+//	calc.compute_r_t(n_layers, W);
+//}
+
+//void test::r_t_test()
+//{
+//	// compute the transmisson and reflection coefficients for a dielectric interface
+//	// R. Sheehan 31 - 7 - 2019
+//
+//	bool pol = TE; 
+//
+//	double n_in, n_out, angle; 
+//
+//	// Need to add conservation of energy confirmation
+//
+//	std::string filename = "Air_to_Glass_R_T.txt"; 
+//	n_out = 1.5; n_in = 1.0; angle = PI_6;
+//
+//	/*std::string filename = "Glass_to_Air_R_T.txt";
+//	n_out = 1.0; n_in = 1.5; angle = PI_6;*/
+//
+//	fresnel iface; 
+//
+//	iface.set_params(n_in, n_out); 
+//
+//	std::complex<double> r = iface.reflection(pol, angle); 
+//	std::complex<double> t = iface.transmission(pol, angle); 
+//
+//	std::cout << "r: " << r << "\n";
+//	std::cout << "t: " << t << "\n";
+//	std::cout << "TE Amplitude Relation t - r: " << t - r << "\n"; // this should be unity
+//	std::cout << "TM Amplitude Relation (n_{2}/n_{1})t - r: " << (iface.get_n_ratio()*t) - r << "\n"; // this should be unity
+//	std::cout << "Power Reflection Coefficient R: " << iface.Reflectivity(pol, angle) << "\n"; 
+//	std::cout << "Power Transmission Coefficient T: " << iface.Transmissivity(pol, angle) << "\n";
+//	std::cout << "Conservation of Energy R + T: " << iface.Reflectivity(pol, angle) + iface.Transmissivity(pol, angle) << "\n"; 
+//
+//	// output the air-glass coefficients
+//	
+//	std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+//
+//	if (write.is_open()) {
+//		
+//		write << "n1, " << n_in << ", n2, " << n_out << ", n1 / n2, " << n_in / n_out << "\n"; 
+//		write << "Critical Angle (rad), " << iface.get_theta_critical().real() << " , " << iface.get_theta_critical().imag() << "\n"; 
+//		write << "Brewster Angle (rad), " << iface.get_theta_brewster().real() << " , " << iface.get_theta_brewster().imag() << "\n";
+//		write << "angle (rad), r_{TE}, t_{TE}, r_{TM}, t_{TM}\n"; 
+//
+//		int n_angle; 
+//		double d_angle, angle_min, angle_max;
+//		//double v1, v2, v3, v4;
+//		std::complex<double> v1, v2, v3, v4;
+//
+//		n_angle = 201; 
+//		angle_min = 0.0; angle_max = PI_2; 
+//		d_angle = (angle_max - angle_min) / ( static_cast<double>(n_angle - 1) ); 
+//
+//		angle = angle_min; 
+//		while (angle < angle_max + d_angle) {
+//			
+//			// compute and output reflection and transmission coefficients
+//			v1 = iface.reflection(TE, angle); 
+//			v2 = iface.transmission(TE, angle); 
+//			v3 = iface.reflection(TM, angle); 
+//			v4 = iface.transmission(TM, angle); 
+//
+//			write << angle << " , " << v1.imag() << " , " << v2.imag() << " , " << v3.imag() << " , " << v4.imag() << "\n"; 
+//
+//			// compute and output power reflection and power transmision coefficients
+//			/*v1 = iface.Reflectivity(TE, angle);
+//			v2 = iface.Transmissivity(TE, angle);
+//			v3 = iface.Reflectivity(TM, angle);
+//			v4 = iface.Transmissivity(TM, angle);
+//
+//			write << angle << " , " << v1 << " , " << v2 << " , " << v3 << " , " << v4 << "\n";*/ 
+//
+//			angle += d_angle; 
+//		}
+//
+//
+//		write.close(); 
+//	}
+//}
+
+//void test::fp_test()
+//{
+//	// Use the multilayer structure to compute the R, T spectrum of a FP cavity
+//	// R. Sheehan 13 - 8 - 2019
+//
+//	int n_pts;
+//	double start, stop, W = 0.0;
+//
+//	// Declarate the objects
+//	sweep WL;
+//
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//	Si ri_si;
+//
+//	// Fill the parameter space
+//	n_pts = 5; start = 1.2; stop = 1.6;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	// Create layer stack
+//	std::vector<layer> the_layers; 
+//
+//	W = 0.0; the_layers.push_back( layer(W, &ri_air) ); 
+//	W = 2; the_layers.push_back( layer(W, &ri_si) );
+//	W = 0.0; the_layers.push_back( layer(W, &ri_sio2) );
+//
+//	// Compute the r, t spectra
+//	multilayer compute; 
+//
+//	compute.set_params(WL, the_layers); 
+//
+//	compute.compute_spectrum(TE, true); 
+//}
+
+//void test::ar_coating()
+//{
+//	// compute the spectrum of ar stack
+//	// SiN layers on SiO2 layers on Si substrate
+//
+//	int n_pts;
+//	double start, stop, W = 0.0, Wt = 0.25*1.55;
+//
+//	// Declarate the objects
+//	sweep WL;
+//
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//	Si ri_si;
+//
+//	// Fill the parameter space
+//	n_pts = 51; start = 1.52; stop = 1.59;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	// Create layer stack
+//	std::vector<layer> the_layers;
+//
+//	the_layers.push_back(layer(W, &ri_air));
+//	Wt *= 9;  the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(W, &ri_sin));
+//
+//	// Compute the r, t spectra
+//	multilayer compute;
+//
+//	compute.set_params(WL, the_layers);
+//
+//	compute.compute_spectrum(TE, true);
+//}
+
+//void test::hr_coating()
+//{
+//	// compute the spectrum of hr stack
+//	// SiN layers on SiO2 layers on Si substrate
+//
+//	int n_pts;
+//	double start, stop, W = 0.0, Wt = 1.55/4.0;
+//
+//	// Declarate the objects
+//	sweep WL;
+//
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//	Si ri_si;
+//
+//	// Fill the parameter space
+//	n_pts = 201; start = 1.0; stop = 1.6;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	// Create layer stack
+//	std::vector<layer> the_layers;
+//
+//	the_layers.push_back(layer(W, &ri_air));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_si));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(W, &ri_air));
+//
+//	// Compute the r, t spectra
+//	multilayer compute;
+//
+//	compute.set_params(WL, the_layers);
+//
+//	compute.compute_spectrum(TE, true);
+//}
+
+//void test::fp_filter()
+//{
+//	// compute the spectrum of hr stack
+//	// SiN layers on SiO2 layers on Si substrate
+//
+//	int n_pts;
+//	double start, stop, W = 0.0, Wt = 0.25*1.55;
+//
+//	// Declarate the objects
+//	sweep WL;
+//
+//	Air ri_air;
+//	SiN ri_sin;
+//	SiO2 ri_sio2;
+//	Si ri_si;
+//
+//	// Fill the parameter space
+//	n_pts = 101; start = 1.2; stop = 1.6;
+//	WL.set_vals(n_pts, start, stop);
+//
+//	// Create layer stack
+//	std::vector<layer> the_layers;
+//
+//	the_layers.push_back(layer(W, &ri_air));
+//
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//
+//	the_layers.push_back(layer(Wt, &ri_sin));
+//	the_layers.push_back(layer(Wt, &ri_sio2));
+//	
+//	the_layers.push_back(layer(W, &ri_si));
+//
+//	// Compute the r, t spectra
+//	multilayer compute;
+//
+//	compute.set_params(WL, the_layers);
+//
+//	compute.compute_spectrum(TE, true);
+//}
