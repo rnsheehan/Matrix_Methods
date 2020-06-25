@@ -9,7 +9,7 @@ int main()
 	//test::r_t_test();
 
 	bool pol = TM; 
-	double angle_in = (0.0) * DEG_TO_RAD; // input angle in units of radians
+	double angle_in = (20.0) * DEG_TO_RAD; // input angle in units of radians
 
 	test::layer_test(pol, angle_in); 
 

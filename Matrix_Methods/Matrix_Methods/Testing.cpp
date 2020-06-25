@@ -225,6 +225,76 @@ void test::layer_test_alt(bool pol, double angle_in)
 	std::cout << "T: " << T << "\n"; // only valid for TE case, otherwise use T = 1 - R
 	std::cout << "1 - R: " << 1.0 - R << "\n"; 
 	std::cout << "R + T: " << R + T << "\n\n";
+
+	bool run_calc = false;
+
+	if (run_calc) {
+
+		double R1, T1, R2, T2; 
+		std::complex<double> r1, t1, r2, t2;
+
+		// loop over the layer length and output the reflectivity
+		//std::string filename = "Air_Silicon_Silica_R_T_Alt.txt";
+		std::string filename = "Air_Silica_Silicon_R_T_Alt.txt";
+
+		std::ofstream write(filename, std::ios_base::out, std::ios_base::trunc);
+
+		if (write.is_open()) {
+			thickness = 1000.0;
+			while (thickness < 2000.0) {
+				// TE Polarisation
+				// first interface cladding -> layer
+				iface1.compute_T(TE, cladding_index, layer_index, angle_in);
+				p0 = iface1.get_p_in();
+				p1 = iface1.get_p_out();
+				M = iface1.transition_matrix();
+
+				// travel across layer
+				travel.compute_P(wavelength, layer_index, thickness, iface1.get_theta_t());
+				Mnow = travel.propagation_matrix();
+				M = vecut::cmat_cmat_product(M, Mnow);
+
+				// second interface layer -> substrate
+				iface2.compute_T(TE, layer_index, substrate_index, iface1.get_theta_t());
+				p2 = iface2.get_p_out();
+				Mnow = iface2.transition_matrix();
+				M = vecut::cmat_cmat_product(M, Mnow); // transfer matrix for whole structure
+
+				// compute reflection, transmission based on elements of accumulated transfer matrix
+				r1 = M[1][0] / M[0][0]; t1 = 1.0 / M[0][0];
+				R1 = template_funcs::DSQR(abs(r1));
+				T1 = (p2 / p0) * template_funcs::DSQR(abs(t1));
+
+				// TM Polarisation
+				// first interface cladding -> layer
+				iface1.compute_T(TM, cladding_index, layer_index, angle_in);
+				p0 = iface1.get_p_in();
+				p1 = iface1.get_p_out();
+				M = iface1.transition_matrix();
+
+				// travel across layer
+				travel.compute_P(wavelength, layer_index, thickness, iface1.get_theta_t());
+				Mnow = travel.propagation_matrix();
+				M = vecut::cmat_cmat_product(M, Mnow);
+
+				// second interface layer -> substrate
+				iface2.compute_T(TM, layer_index, substrate_index, iface1.get_theta_t());
+				p2 = iface2.get_p_out();
+				Mnow = iface2.transition_matrix();
+				M = vecut::cmat_cmat_product(M, Mnow); // transfer matrix for whole structure
+
+				// compute reflection, transmission based on elements of accumulated transfer matrix
+				r2 = M[1][0] / M[0][0]; t2 = 1.0 / M[0][0];
+				R2 = template_funcs::DSQR(abs(r2));
+				//T2 = (p2 / p0) * template_funcs::DSQR(abs(t2));
+				T2 = 1.0 - R2; 
+
+				write << thickness << " , " << R1 << " , " << T1 << " , " << R2 << " , " << T2 << "\n";
+				thickness += 1.0;
+			}
+			write.close();
+		}
+	}
 }
 
 void test::AR_Coating()
